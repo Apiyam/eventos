@@ -2,9 +2,34 @@ import { parseTalkDate } from './time'
 import { fetchClerkUser, fetchClerkUsers, findClerkUser, makeNfcId, normalizeClerkUser, patchClerkPublic, uniqueNfcId } from './clerk'
 
 const studentSync = new Map()
+const ADMIN_TOKEN_KEY = 'eventos.admin.token'
 
 const remote = String(import.meta.env.VITE_API_URL || 'https://vexom.com.mx/back_tec_nfc/public/api/v1/').replace(/\/$/, '')
-const API = import.meta.env.DEV ? '/api' : remote
+const useSameOriginProxy = import.meta.env.DEV || import.meta.env.VITE_API_PROXY !== '0'
+const API = useSameOriginProxy ? '/api' : remote
+
+export function getAdminToken() {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAdminToken(token) {
+  try {
+    if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token)
+    else localStorage.removeItem(ADMIN_TOKEN_KEY)
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function readXsrfToken() {
+  if (typeof document === 'undefined') return ''
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
 
 function firstMessage(errors) {
   if (!errors || typeof errors !== 'object') return ''
@@ -348,7 +373,10 @@ export async function fetchStudents(token, { force = false } = {}) {
 
 export function api(path, { token, method = 'GET', body, form } = {}) {
   const headers = { Accept: 'application/json' }
-  if (token) headers.Authorization = `Bearer ${token}`
+  const authToken = token || getAdminToken()
+  if (authToken) headers.Authorization = `Bearer ${authToken}`
+  const xsrf = readXsrfToken()
+  if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
   if (!form) headers['Content-Type'] = 'application/json'
   return fetch(`${API}${path}`, {
     method,

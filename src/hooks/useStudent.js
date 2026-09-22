@@ -1,6 +1,6 @@
 import { useClerk, useUser } from '@clerk/clerk-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { api, localStudent, registerStudent, writeStudentCache, unwrapUser } from '../lib/api'
+import { api, getAdminToken, localStudent, registerStudent, setAdminToken, unwrapToken, unwrapUser, writeStudentCache } from '../lib/api'
 import { patchClerkPublic } from '../lib/clerk'
 
 export function useStudent() {
@@ -94,17 +94,27 @@ export function useStudent() {
 }
 
 export function useAdminSession() {
+  const [token, setToken] = useState(() => getAdminToken())
   const [profile, setProfile] = useState(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    api('/auth/profile')
+    const stored = getAdminToken()
+    if (!stored) {
+      setReady(true)
+      return undefined
+    }
+    api('/auth/profile', { token: stored })
       .then((res) => {
         if (!cancelled) setProfile(unwrapUser(res))
       })
       .catch(() => {
-        if (!cancelled) setProfile(null)
+        if (!cancelled) {
+          setAdminToken('')
+          setToken('')
+          setProfile(null)
+        }
       })
       .finally(() => {
         if (!cancelled) setReady(true)
@@ -118,17 +128,22 @@ export function useAdminSession() {
     const res = await api('/auth/login', { method: 'POST', body: { email, password } })
     const nextUser = unwrapUser(res)
     if (!nextUser?.id && !nextUser?.email) throw new Error('Login incompleto')
+    const nextToken = unwrapToken(res)
+    setAdminToken(nextToken)
+    setToken(nextToken)
     setProfile(nextUser)
     setReady(true)
     return nextUser
   }, [])
 
   const logout = useCallback(async () => {
-    await api('/auth/logout', { method: 'POST' }).catch(() => {})
+    await api('/auth/logout', { method: 'POST', token }).catch(() => {})
+    setAdminToken('')
+    setToken('')
     setProfile(null)
-  }, [])
+  }, [token])
 
-  return { token: '', profile, ready, login, logout }
+  return { token, profile, ready, login, logout }
 }
 
 export function clerkEnabled() {

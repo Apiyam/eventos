@@ -16,26 +16,27 @@ export default defineConfig(({ mode }) => {
     },
   }
 
-  return {
-    plugins: [react(), clerkBridge],
-    server: {
-      proxy: {
-        '/api': {
-          target: target.origin,
-          changeOrigin: true,
-          cookieDomainRewrite: 'localhost',
-          rewrite: (path) => `${target.pathname}${path.replace(/^\/api/, '')}`,
-          configure(proxy) {
-            proxy.on('proxyRes', (proxyRes) => {
-              const cookies = proxyRes.headers['set-cookie']
-              if (!cookies) return
-              proxyRes.headers['set-cookie'] = cookies.map((cookie) =>
-                cookie.replace(/;\s*Secure/gi, '').replace(/;\s*Domain=[^;]*/gi, ''),
-              )
-            })
-          },
-        },
+  const apiProxy = {
+    '/api': {
+      target: target.origin,
+      changeOrigin: true,
+      cookieDomainRewrite: 'localhost',
+      rewrite: (path) => `${target.pathname}${path.replace(/^\/api/, '')}`,
+      configure(proxy) {
+        proxy.on('proxyRes', (proxyRes) => {
+          const cookies = proxyRes.headers['set-cookie']
+          if (!cookies) return
+          proxyRes.headers['set-cookie'] = cookies.map((cookie) =>
+            cookie.replace(/;\s*Secure/gi, '').replace(/;\s*Domain=[^;]*/gi, ''),
+          )
+        })
       },
     },
+  }
+
+  return {
+    plugins: [react(), clerkBridge],
+    server: { proxy: apiProxy },
+    preview: { proxy: apiProxy },
   }
 })
