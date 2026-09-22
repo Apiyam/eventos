@@ -1,0 +1,431 @@
+{
+  "name": "MOSTLA Clerk production",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Tras importar: 1) Activa el flujo. 2) Variables de n8n: CLERK_SECRET_KEY. El webhook DEBE responder con el último nodo (lastNode), no onReceived. Si responde 200 vacío, este JSON no está activo.",
+        "height": 220,
+        "width": 320
+      },
+      "id": "note-setup",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [160, 140]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mostla-clerk",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "Content-Type" }
+            ]
+          }
+        }
+      },
+      "id": "wh-mostla-clerk",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [200, 460],
+      "webhookId": "mostla-clerk"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "n1", "name": "op", "value": "={{ ($json.body && $json.body.op) || $json.op || '' }}", "type": "string" },
+            { "id": "n2", "name": "id", "value": "={{ ($json.body && $json.body.id) || $json.id || '' }}", "type": "string" },
+            { "id": "n3", "name": "public_metadata", "value": "={{ ($json.body && $json.body.public_metadata) || $json.public_metadata || {} }}", "type": "object" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize",
+      "name": "Normalizar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 460]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "rule-list",
+                    "leftValue": "={{ $json.op }}",
+                    "rightValue": "list",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "list"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "rule-get",
+                    "leftValue": "={{ $json.op }}",
+                    "rightValue": "get",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "rule-patch",
+                    "leftValue": "={{ $json.op }}",
+                    "rightValue": "patch",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "patch"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "id": "rule-verify",
+                    "leftValue": "={{ $json.op }}",
+                    "rightValue": "verify",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "verify"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "switch-op",
+      "name": "Operación",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [640, 460]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.clerk.com/v1/users?limit=100&order_by=-created_at",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "outputPropertyName": "users"
+            }
+          }
+        }
+      },
+      "id": "http-list",
+      "name": "HTTP List users",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 180],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "l1",
+              "name": "data",
+              "value": "={{ (Array.isArray($json.users) ? $json.users : Array.isArray($json.data) ? $json.data : Array.isArray($json) ? $json : []).map((u) => ({ id: u.id, full_name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || u.email_addresses?.[0]?.email_address || 'Asistente', email: u.email_addresses?.[0]?.email_address || '', image_url: u.image_url || '', nfc_id: u.public_metadata?.nfc_id || '', staff: Boolean(u.public_metadata?.staff), points: Number(u.public_metadata?.points || 0), student_id: u.public_metadata?.student_id || '', talk_ids: u.public_metadata?.talk_ids || [], created_at: u.created_at || '' })) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "map-list",
+      "name": "Map list",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1140, 140]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.clerk.com/v1/users/{{ encodeURIComponent($('Normalizar').first().json.id) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-get",
+      "name": "HTTP Get user",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "g1", "name": "data.id", "value": "={{ $json.id }}", "type": "string" },
+            { "id": "g2", "name": "data.full_name", "value": "={{ [$json.first_name, $json.last_name].filter(Boolean).join(' ') || $json.username || $json.email_addresses?.[0]?.email_address || 'Asistente' }}", "type": "string" },
+            { "id": "g3", "name": "data.email", "value": "={{ $json.email_addresses?.[0]?.email_address || '' }}", "type": "string" },
+            { "id": "g4", "name": "data.image_url", "value": "={{ $json.image_url || '' }}", "type": "string" },
+            { "id": "g5", "name": "data.nfc_id", "value": "={{ $json.public_metadata?.nfc_id || '' }}", "type": "string" },
+            { "id": "g6", "name": "data.staff", "value": "={{ Boolean($json.public_metadata?.staff) }}", "type": "boolean" },
+            { "id": "g7", "name": "data.points", "value": "={{ Number($json.public_metadata?.points || 0) }}", "type": "number" },
+            { "id": "g8", "name": "data.student_id", "value": "={{ $json.public_metadata?.student_id || '' }}", "type": "string" },
+            { "id": "g9", "name": "data.talk_ids", "value": "={{ $json.public_metadata?.talk_ids || [] }}", "type": "array" },
+            { "id": "g10", "name": "data.created_at", "value": "={{ $json.created_at || '' }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "map-get",
+      "name": "Map get",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1140, 360]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.clerk.com/v1/users/{{ encodeURIComponent($('Normalizar').first().json.id) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-patch-get",
+      "name": "HTTP Get before patch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 640],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.clerk.com/v1/users/{{ encodeURIComponent($('Normalizar').first().json.id) }}/metadata",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { public_metadata: $('Normalizar').first().json.public_metadata || {} } }}",
+        "options": {}
+      },
+      "id": "http-patch",
+      "name": "HTTP Patch user",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 620],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "p1", "name": "data.id", "value": "={{ $json.id }}", "type": "string" },
+            { "id": "p2", "name": "data.full_name", "value": "={{ [$json.first_name, $json.last_name].filter(Boolean).join(' ') || $json.username || $json.email_addresses?.[0]?.email_address || 'Asistente' }}", "type": "string" },
+            { "id": "p3", "name": "data.email", "value": "={{ $json.email_addresses?.[0]?.email_address || '' }}", "type": "string" },
+            { "id": "p4", "name": "data.image_url", "value": "={{ $json.image_url || '' }}", "type": "string" },
+            { "id": "p5", "name": "data.nfc_id", "value": "={{ $json.public_metadata?.nfc_id || '' }}", "type": "string" },
+            { "id": "p6", "name": "data.staff", "value": "={{ Boolean($json.public_metadata?.staff) }}", "type": "boolean" },
+            { "id": "p7", "name": "data.points", "value": "={{ Number($json.public_metadata?.points || 0) }}", "type": "number" },
+            { "id": "p8", "name": "data.student_id", "value": "={{ $json.public_metadata?.student_id || '' }}", "type": "string" },
+            { "id": "p9", "name": "data.talk_ids", "value": "={{ $json.public_metadata?.talk_ids || [] }}", "type": "array" },
+            { "id": "p10", "name": "data.created_at", "value": "={{ $json.created_at || '' }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "map-patch",
+      "name": "Map patch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1360, 620]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "e1", "name": "status", "value": false, "type": "boolean" },
+            { "id": "e2", "name": "message", "value": "={{ $json.message || $json.error?.message || $json.error || 'Operación n8n inválida o Clerk no respondió' }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "map-error",
+      "name": "Responder error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1140, 860]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.clerk.com/v1/users/{{ encodeURIComponent($('Normalizar').first().json.id) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-verify-get",
+      "name": "HTTP Get user verify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 980],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.clerk.com/v1/email_addresses/{{ encodeURIComponent($json.email_addresses?.[0]?.id || '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { verified: true } }}",
+        "options": {}
+      },
+      "id": "http-verify-email",
+      "name": "HTTP Verify email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 980],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "v1", "name": "data.id", "value": "={{ $('Normalizar').first().json.id }}", "type": "string" },
+            { "id": "v2", "name": "data.verified", "value": true, "type": "boolean" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "map-verify",
+      "name": "Map verify",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1380, 980]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Normalizar", "type": "main", "index": 0 }]]
+    },
+    "Normalizar": {
+      "main": [[{ "node": "Operación", "type": "main", "index": 0 }]]
+    },
+    "Operación": {
+      "main": [
+        [{ "node": "HTTP List users", "type": "main", "index": 0 }],
+        [{ "node": "HTTP Get user", "type": "main", "index": 0 }],
+        [{ "node": "HTTP Patch user", "type": "main", "index": 0 }],
+        [{ "node": "HTTP Get user verify", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP List users": {
+      "main": [
+        [{ "node": "Map list", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Get user": {
+      "main": [
+        [{ "node": "Map get", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Get before patch": {
+      "main": [
+        [{ "node": "Map patch", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Patch user": {
+      "main": [
+        [{ "node": "HTTP Get before patch", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Get user verify": {
+      "main": [
+        [{ "node": "HTTP Verify email", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Verify email": {
+      "main": [
+        [{ "node": "Map verify", "type": "main", "index": 0 }],
+        [{ "node": "Responder error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
