@@ -18,8 +18,8 @@ import {
   X,
 } from 'lucide-react'
 import { DateTimePicker } from '../components/DateTimePicker'
-import { api, fetchStudents, imageUrl, unwrapImagePath, unwrapList } from '../lib/api'
-import { patchClerkPublic } from '../lib/clerk'
+import { api, createStudentRecord, fetchStudents, imageUrl, unwrapImagePath, unwrapList } from '../lib/api'
+import { publicNfcUrl } from '../lib/nfc'
 import { RedeemPage } from './RedeemPage'
 import { ScanTalkPage } from './ScanTalkPage'
 
@@ -36,7 +36,7 @@ const emptyTalk = {
 
 function makeNfcUrl() {
   const hex = crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()
-  return `https://mostla.day/nfc/${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`
+  return publicNfcUrl(`${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`)
 }
 
 function blankTalk() {
@@ -68,6 +68,11 @@ const emptyUser = {
   role_id: 2,
 }
 
+const emptyStudent = {
+  enrollment_number: '',
+  card_number: '',
+}
+
 function visiblePoints(row, talks = []) {
   const stored = Number(row?.points || 0)
   const ids = new Set((row?.talk_ids || []).map(String))
@@ -93,6 +98,8 @@ export function AdminDashboard({ token, profile, onLogout }) {
   const [productForm, setProductForm] = useState({ product: '', cost: 20, quantity: 10 })
   const [userModal, setUserModal] = useState(false)
   const [userForm, setUserForm] = useState(emptyUser)
+  const [studentModal, setStudentModal] = useState(false)
+  const [studentForm, setStudentForm] = useState(emptyStudent)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
   const [saving, setSaving] = useState(false)
@@ -143,6 +150,7 @@ export function AdminDashboard({ token, profile, onLogout }) {
       const payload = {
         name: form.name,
         speaker: form.speaker,
+        company: form.speaker,
         start_time: form.start_time,
         duration: form.duration,
         benefit: form.benefit,
@@ -239,34 +247,20 @@ export function AdminDashboard({ token, profile, onLogout }) {
     await refresh()
   }
 
-  async function toggleStaff(clerkId, staff) {
-    if (!clerkId) return
+  async function saveStudent(event) {
+    event.preventDefault()
     setError('')
+    setSaving(true)
     try {
-      const current = students.find((row) => row.clerk_user_id === clerkId) || {}
-      const profile = await patchClerkPublic(clerkId, {
-        staff,
-        nfc_id: current.nfc_id || '',
-        student_id: current.student_id || current.id || '',
-        points: current.points || 0,
-        talk_ids: current.talk_ids || [],
-      })
-      if (!profile?.id) throw new Error('n8n no devolvió el usuario actualizado')
-      setStudents((list) =>
-        list.map((row) =>
-          row.clerk_user_id === clerkId
-            ? {
-                ...row,
-                staff: Boolean(profile.staff ?? staff),
-                nfc_id: profile.nfc_id || row.nfc_id,
-                points: Math.max(Number(profile.points || 0), Number(row.points || 0)),
-                talk_ids: profile.talk_ids || row.talk_ids,
-              }
-            : row,
-        ),
-      )
+      await createStudentRecord(studentForm, token)
+      setStudentForm(emptyStudent)
+      setStudentModal(false)
+      await refresh()
+      setTab('students')
     } catch (err) {
       setError(err.message)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -443,37 +437,34 @@ export function AdminDashboard({ token, profile, onLogout }) {
 
         {tab === 'students' ? (
           <section className="dash-card dash-table-wrap">
-            <h3>Asistentes</h3>
+            <div className="dash-card-head">
+              <h3>Asistentes</h3>
+              <button
+                type="button"
+                className="dash-cta"
+                onClick={() => {
+                  setStudentForm(emptyStudent)
+                  setStudentModal(true)
+                }}
+              >
+                <Plus size={16} /> Añadir asistente
+              </button>
+            </div>
             <table>
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>Student ID</th>
-                  <th>Clerk</th>
+                  <th>Matrícula</th>
                   <th>NFC</th>
-                  <th>Staff</th>
+                  <th>ID</th>
                   <th>Puntos</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((row) => (
-                  <tr key={row.clerk_user_id || row.student_id || row.email}>
-                    <td>
-                      <div className="dash-person">
-                        {row.image_url ? <img src={row.image_url} alt="" /> : null}
-                        <span>{row.full_name || [row.first_name, row.last_name].filter(Boolean).join(' ') || '—'}</span>
-                      </div>
-                    </td>
-                    <td>{row.email || '—'}</td>
+                  <tr key={row.enrollment_number || row.student_id || row.id}>
+                    <td className="dash-mono">{row.enrollment_number || '—'}</td>
+                    <td className="dash-mono">{row.card_number || row.nfc_id || '—'}</td>
                     <td className="dash-mono">{row.student_id || row.id || '—'}</td>
-                    <td className="dash-mono">{row.clerk_user_id || '—'}</td>
-                    <td>{row.nfc_id || '—'}</td>
-                    <td>
-                      <button type="button" onClick={() => toggleStaff(row.clerk_user_id, !row.staff)}>
-                        {row.staff ? 'Quitar staff' : 'Hacer staff'}
-                      </button>
-                    </td>
                     <td>{visiblePoints(row, talks)}</td>
                   </tr>
                 ))}
@@ -655,6 +646,43 @@ export function AdminDashboard({ token, profile, onLogout }) {
               </button>
               <button className="dash-cta" type="submit">
                 Crear
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {studentModal ? (
+        <div className="dash-modal-bg" onClick={() => setStudentModal(false)}>
+          <form className="dash-card dash-modal" onClick={(e) => e.stopPropagation()} onSubmit={saveStudent}>
+            <div className="dash-card-head">
+              <h3>Nuevo asistente</h3>
+              <button type="button" className="dash-icon-btn" onClick={() => setStudentModal(false)} aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+            <label>
+              Matrícula
+              <input
+                value={studentForm.enrollment_number}
+                onChange={(e) => setStudentForm({ ...studentForm, enrollment_number: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              NFC / card_number
+              <input
+                value={studentForm.card_number}
+                onChange={(e) => setStudentForm({ ...studentForm, card_number: e.target.value })}
+                required
+              />
+            </label>
+            <div className="dash-modal-actions">
+              <button type="button" onClick={() => setStudentModal(false)}>
+                Cancelar
+              </button>
+              <button className="dash-cta" disabled={saving} type="submit">
+                {saving ? 'Creando…' : 'Crear'}
               </button>
             </div>
           </form>

@@ -1,0 +1,874 @@
+{
+  "info": {
+    "_postman_id": "a215931a-a65e-4f18-bc5f-b4e160e5b63f",
+    "name": "Staging",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "9856833"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Log in",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"cmorales@vexom.com.mx\",\n    \"password\": \"rodolfo48\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/login",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Log out",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/auth/logout",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"55 3268 6120\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/profile",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Profile",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/profile",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Christian Morales\",\n    \"email\": \"cmorales@vexom.com.mx\",\n    \"password\": \"rodolfo48\",\n    \"password_confirmation\": \"rodolfo48\",\n    \"must_change_password\": false,\n    \"role_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/register-admin",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "register-admin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"iywxoxn0xi@lnovic.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/forgot-password",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"iywxoxn0xi@lnovic.com\",\r\n    \"token\": \"6f72f97f3f0c44591a4e101670a806f1de2cb36fec3850346d3f28754623de10\",\r\n    \"password\": \"ACBD1234\",\r\n    \"password_confirmation\": \"ACBD1234\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/reset-password",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/users",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/users/2",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"full_name\": \"Fernando Cuadros\",\r\n    \"email\": \"bp13w027ug@ruutukf.com\",\r\n    \"password\": \"abcd1234\",\r\n    \"password_confirmation\": \"abcd1234\",\r\n    \"phone\": \"\",\r\n    \"role_id\": 2\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/users",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"first_name\": \"Victor Manuel\",\r\n    \"last_name\": \"Grimaldi\",\r\n    \"email\": \"kqi5jgmykk@mrotzis.com\",\r\n    \"phone\": \"\",\r\n    \"role\": \"user\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/users/5",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/users/5/toggle-access",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users",
+                "5",
+                "toggle-access"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/users/2",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "users",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"bp13w027ug@ruutukf.com\",\n    \"code\": \"407550\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/auth/verify-email",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/students",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Student",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/students/2",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "students",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/students/4",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "students",
+                "4"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enrollment_number\": \"VXM-0408\",\n  \"card_number\": \"VX-0001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/students",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enrollment_number\": \"ENR-44rw22\",\n  \"card_number\": \"CARD-0002\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/students/4",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "students",
+                "4"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Store",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/store/1",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "store",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product\": \"Agua\",\n    \"cost\": 10,\n    \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/store",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "store"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product\": \"Pizza rebanada\",\n    \"cost\": 100,\n    \"quantity\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/store/5/details",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "store",
+                "5",
+                "details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buy product",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_user\": 1,\n  \"id_product\": 1,\n  \"quantity_bought\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/store/1",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "store",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Images",
+      "item": [
+        {
+          "name": "Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [
+                    "/Users/christianmoralesconstantino/Downloads/IMG_4553.png"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{AdmStg}}/images?=",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "images"
+              ],
+              "query": [
+                {
+                  "key": "",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Talks",
+      "item": [
+        {
+          "name": "Talks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/talks",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "talks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add talk",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Como aplicar la IA en tus tareas\",\n    \"company\": \"TEC\",\n    \"image_path\": \"\",\n    \"duration\": 30,\n    \"start_time\": \"2026-09-10 15:00:00\",\n    \"benefit\": 50,\n    \"max_forum\": 100,\n    \"url_nfc\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/talks",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "talks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Talk",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/talks/2",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "talks",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update talk",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"IA en la actualidad\",\n    \"company\": \"Vexom\",\n    \"image_path\": \"\",\n    \"duration\": 30,\n    \"start_time\": \"2026-10-10 10:30:00\",\n    \"benefit\": 20,\n    \"max_forum\": 100,\n    \"url_nfc\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/talks/2",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "talks",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete talk",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/talks/3",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "talks",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Student Talks",
+      "item": [
+        {
+          "name": "Index",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AdmStg}}/student-talks",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "student-talks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "/*\n{\n  \"student_id\": 3,\n  \"talk_id\": 1\n}\n*/\n{\n  \"enrollment_number\": \"VXM-0408\",\n  \"talk_id\": 1\n}\n\n/*\n{\n  \"student_id\": 3,\n  \"enrollment_number\": \"ENR-efe3\",\n  \"talk_id\": 2\n}\n*/",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AdmStg}}/student-talks",
+              "host": [
+                "{{AdmStg}}"
+              ],
+              "path": [
+                "student-talks"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "AdmStg",
+      "value": "https://vexom.com.mx/back_tec_nfc/public/api/v1"
+    }
+  ]
+}

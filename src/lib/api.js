@@ -1,12 +1,17 @@
 import { parseTalkDate } from './time'
-import { fetchClerkUser, fetchClerkUsers, findClerkUser, makeNfcId, normalizeClerkUser, patchClerkPublic, uniqueNfcId } from './clerk'
 
-const studentSync = new Map()
 const ADMIN_TOKEN_KEY = 'eventos.admin.token'
 
-const remote = String(import.meta.env.VITE_API_URL || 'https://vexom.com.mx/back_tec_nfc/public/api/v1/').replace(/\/$/, '')
-const useSameOriginProxy = import.meta.env.DEV || import.meta.env.VITE_API_PROXY !== '0'
-const API = useSameOriginProxy ? '/api' : remote
+const REAL_API = 'https://vexom.com.mx/back_tec_nfc/public/api/v1'
+
+function resolveRemote() {
+  const configured = String(import.meta.env.VITE_API_URL || REAL_API).replace(/\/$/, '')
+  if (/localhost|127\.0\.0\.1/i.test(configured)) return REAL_API
+  return configured
+}
+
+const remote = resolveRemote()
+const API = remote
 
 export function getAdminToken() {
   try {
@@ -98,54 +103,34 @@ export function imageUrl(path) {
   return `${origin}/storage/${path}`
 }
 
-function studentCacheKey(clerkUserId) {
-  return `eventos.student.${clerkUserId}`
-}
-
+const STUDENT_SESSION_KEY = 'eventos.student.enrollment'
 const STUDENTS_DIR_KEY = 'eventos.students.dir'
 let directory = []
 let directoryJob = null
 
-export function readStudentCache(clerkUserId) {
+export function getStudentEnrollment() {
   try {
-    const raw = localStorage.getItem(studentCacheKey(clerkUserId))
-    return raw ? JSON.parse(raw) : null
+    return localStorage.getItem(STUDENT_SESSION_KEY) || ''
   } catch {
-    return null
+    return ''
   }
 }
 
-export function writeStudentCache(clerkUserId, student) {
-  if (!clerkUserId || !student) return
-  localStorage.setItem(studentCacheKey(clerkUserId), JSON.stringify(student))
-}
-
-function readStudentsDirectory() {
+export function setStudentEnrollment(enrollment) {
   try {
-    const raw = localStorage.getItem(STUDENTS_DIR_KEY)
-    return raw ? JSON.parse(raw) : []
+    if (enrollment) localStorage.setItem(STUDENT_SESSION_KEY, enrollment)
+    else localStorage.removeItem(STUDENT_SESSION_KEY)
   } catch {
-    return []
+    /* private mode / quota */
   }
 }
 
 function writeStudentsDirectory(list) {
-  localStorage.setItem(STUDENTS_DIR_KEY, JSON.stringify(list))
-}
-
-function upsertLocalStudent(student) {
-  if (!student) return student
-  if (student.clerk_user_id) writeStudentCache(student.clerk_user_id, student)
-  const id = String(student.student_id || student.id || '')
-  const next = readStudentsDirectory().filter((row) => {
-    if (student.clerk_user_id && row.clerk_user_id === student.clerk_user_id) return false
-    if (id && String(row.student_id || row.id || '') === id) return false
-    return true
-  })
-  next.push(student)
-  directory = next
-  writeStudentsDirectory(next)
-  return student
+  try {
+    localStorage.setItem(STUDENTS_DIR_KEY, JSON.stringify(list))
+  } catch {
+    /* ignore */
+  }
 }
 
 export function extractStudentId(record) {
@@ -181,179 +166,52 @@ export function extractTalkIds(res) {
     .map(String)
 }
 
-export function localStudent(user, extra = {}) {
-  const clerkUserId = user?.id || extra.clerk_user_id
-  const cached = clerkUserId ? readStudentCache(clerkUserId) : null
-  const talk_ids = extra.talk_ids || cached?.talk_ids || []
-  const staff = Boolean(extra.staff ?? cached?.staff)
-  const studentId = extractStudentId({ ...cached, ...extra })
-  const points = staff
-    ? 0
-    : extra.points != null
-      ? Number(extra.points)
-      : Number(cached?.points ?? 0)
-  return {
-    ...cached,
-    ...extra,
-    id: studentId,
-    student_id: studentId,
-    clerk_user_id: clerkUserId,
-    full_name: extra.full_name || cached?.full_name || user?.fullName || '',
-    email: extra.email || cached?.email || user?.primaryEmailAddress?.emailAddress || '',
-    nfc_id: extra.nfc_id || cached?.nfc_id || '',
-    talk_ids,
-    points,
-    staff,
-  }
-}
-
-function isIdTaken(error) {
-  return /taken|ya (est[aá]|fue) (tomad|registrad)|already/i.test(error?.message || '')
-}
-
-async function persistStudentIdentity(clerkUserId, extra = {}, clerks = []) {
-  const nfc_id = uniqueNfcId(extra.nfc_id, clerkUserId, [...clerks, ...readStudentsDirectory()])
-  const student_id = extractStudentId(extra)
-  const clerk = findClerkUser(clerkUserId, clerks) || {}
-  const next = mixStudentRecord(
-    {
-      ...extra,
-      clerk_user_id: clerkUserId,
-      nfc_id,
-      student_id,
-      id: student_id,
-      points: extra.staff ? extra.points : extra.points ?? clerk.points ?? 0,
-    },
-    clerk,
-  )
-  upsertLocalStudent(next)
-  const sameMeta =
-    clerk.nfc_id === next.nfc_id &&
-    String(clerk.student_id || '') === String(next.student_id || '') &&
-    Boolean(clerk.staff) === Boolean(next.staff) &&
-    Number(clerk.points || 0) === Number(next.points || 0)
-  if (!sameMeta) {
-    await patchClerkPublic(clerkUserId, {
-      nfc_id,
-      student_id: student_id || next.student_id || 0,
-      staff: Boolean(next.staff),
-      points: next.points || 0,
-      talk_ids: next.talk_ids || [],
-    })
-  }
-  return next
-}
-
-export function registerStudent(clerkUserId, hint = {}) {
-  if (!clerkUserId) return Promise.reject(new Error('clerk_user_id requerido'))
-  if (studentSync.has(clerkUserId)) return studentSync.get(clerkUserId)
-  const job = (async () => {
-    const known = { ...readStudentCache(clerkUserId), ...hint }
-    const posted = unwrapRecord(
-      await api('/students', {
-        method: 'POST',
-        body: {
-          clerk_user_id: clerkUserId,
-          nfc_id: known.nfc_id || makeNfcId(),
-          full_name: known.full_name || '',
-          email: known.email || '',
-        },
-      }).catch((error) => {
-        if (!isIdTaken(error)) throw error
-        return known
-      }),
-    )
-    const clerks = await fetchClerkUsers({ force: true }).catch(() => [])
-    const clerk = findClerkUser(clerkUserId, clerks) || (await fetchClerkUser(clerkUserId).catch(() => null)) || {}
-    return persistStudentIdentity(clerkUserId, { ...known, ...clerk, ...posted }, clerks)
-  })().finally(() => studentSync.delete(clerkUserId))
-  studentSync.set(clerkUserId, job)
-  return job
-}
-
 function studentPoints(row) {
   if (!row) return 0
   const n = Number(row.points ?? row.current_points ?? row.current_points_user ?? row.score)
   return Number.isFinite(n) ? n : 0
 }
 
+export function sameCode(a, b) {
+  return String(a || '')
+    .trim()
+    .replace(/-/g, '')
+    .toUpperCase() ===
+    String(b || '')
+      .trim()
+      .replace(/-/g, '')
+      .toUpperCase()
+}
+
 export function asStudentProfile(row) {
   if (!row) return null
   const student_id = extractStudentId(row)
+  const enrollment_number = String(row.enrollment_number || row.matricula || row.enrollment || '').trim()
+  const card_number = String(row.card_number || row.nfc_id || row.nfc || '').trim()
   return {
     ...row,
     id: student_id,
     student_id,
-    clerk_user_id: row.clerk_user_id || (typeof row.id === 'string' ? row.id : ''),
-    nfc_id: row.nfc_id || '',
-    full_name: row.full_name || 'Asistente',
+    enrollment_number,
+    card_number,
+    nfc_id: card_number,
+    full_name: row.full_name || enrollment_number || 'Asistente',
     email: row.email || '',
     image_url: row.image_url || '',
     points: studentPoints(row),
-    talk_ids: Array.isArray(row.talk_ids) ? row.talk_ids.map(String) : [],
+    talk_ids: Array.isArray(row.talk_ids)
+      ? row.talk_ids.map(String)
+      : Array.isArray(row.talks)
+        ? row.talks.map((talk) => String(talk.id || talk.talk_id)).filter(Boolean)
+        : [],
+    talks: Array.isArray(row.talks) ? row.talks : undefined,
     staff: Boolean(row.staff),
     created_at: row.created_at || '',
   }
 }
 
-export function mixStudentRecord(student, clerk) {
-  if (!student && !clerk) return null
-  const identity = normalizeClerkUser(clerk) || {}
-  const clerkId = student?.clerk_user_id || identity.id || clerk?.id || clerk?.clerk_user_id || ''
-  return asStudentProfile({
-    ...(student || {}),
-    clerk_user_id: clerkId,
-    first_name: identity.first_name || '',
-    last_name: identity.last_name || '',
-    full_name: identity.full_name || '',
-    email: identity.email || '',
-    nfc_id: identity.nfc_id || '',
-    image_url: identity.image_url || student?.image_url || '',
-    points: Math.max(studentPoints(student), studentPoints(identity)),
-    staff: Boolean(identity.staff ?? student?.staff),
-    talk_ids: identity.talk_ids?.length ? identity.talk_ids : student?.talk_ids || [],
-    student_id: extractStudentId(student) || extractStudentId(identity) || extractStudentId(clerk),
-    created_at: student?.created_at || identity.created_at || '',
-  })
-}
-
-export function mixStudentsWithClerk(students, clerks) {
-  const profiles = clerks.map((user) => normalizeClerkUser(user)).filter(Boolean)
-  const byClerkId = new Map()
-  const byStudentId = new Map()
-  const byNfc = new Map()
-  const byEmail = new Map()
-  for (const user of profiles) {
-    if (user.id) byClerkId.set(user.id, user)
-    const sid = extractStudentId(user)
-    if (sid) byStudentId.set(String(sid), user)
-    const nfc = String(user.nfc_id || '').replace(/-/g, '').toUpperCase()
-    if (nfc) byNfc.set(nfc, user)
-    const email = String(user.email || '').trim().toLowerCase()
-    if (email) byEmail.set(email, user)
-  }
-  const used = new Set()
-  const mixed = students.map((row) => {
-    const nfc = String(row.nfc_id || '').replace(/-/g, '').toUpperCase()
-    const email = String(row.email || '').trim().toLowerCase()
-    const clerk =
-      byClerkId.get(row.clerk_user_id) ||
-      byStudentId.get(String(extractStudentId(row) || '')) ||
-      (nfc ? byNfc.get(nfc) : null) ||
-      (email ? byEmail.get(email) : null) ||
-      null
-    if (clerk?.id) used.add(clerk.id)
-    return mixStudentRecord(row, clerk)
-  })
-  for (const clerk of profiles) {
-    if (!clerk?.id || used.has(clerk.id)) continue
-    mixed.push(mixStudentRecord(null, clerk))
-  }
-  return mixed
-}
-
-export function getStudentDirectory() {
-  return directory.length ? directory : readStudentsDirectory()
+export function findStudentByEnrollment(students, enrollment) {
+  return students.find((row) => sameCode(row.enrollment_number, enrollment)) || null
 }
 
 export async function fetchStudents(token, { force = false } = {}) {
@@ -361,14 +219,73 @@ export async function fetchStudents(token, { force = false } = {}) {
   if (!force && directoryJob) return directoryJob
   directoryJob = (async () => {
     const rows = unwrapList(await api('/students', { token }))
-    const clerks = await fetchClerkUsers({ force: true })
-    directory = mixStudentsWithClerk(rows, clerks)
+    directory = rows.map(asStudentProfile).filter(Boolean)
     writeStudentsDirectory(directory)
     return directory
   })().finally(() => {
     directoryJob = null
   })
   return directoryJob
+}
+
+export async function fetchTalks() {
+  const res = await fetch(`${remote}/talks`, { headers: { Accept: 'application/json' } })
+  return unwrapList(await parse(res)).map(mapTalk)
+}
+
+export async function fetchStudentTalks(student) {
+  if (Array.isArray(student?.talks) && student.talks.length) {
+    return extractTalkIds({ data: student.talks })
+  }
+  const enrollment = student?.enrollment_number
+  const studentId = extractStudentId(student)
+  try {
+    const rows = unwrapList(await api('/student-talks')).filter((row) => {
+      if (enrollment && sameCode(row.enrollment_number || row.student?.enrollment_number, enrollment)) return true
+      if (studentId && Number(row.student_id || row.student?.id) === studentId) return true
+      return false
+    })
+    if (rows.length) return extractTalkIds({ data: rows })
+  } catch {
+    /* try by id */
+  }
+  if (studentId) {
+    try {
+      return extractTalkIds(await api(`/student-talks/${studentId}`))
+    } catch {
+      /* keep listed talks */
+    }
+  }
+  return (student?.talk_ids || []).map(String)
+}
+
+export async function loginStudentByEnrollment(enrollment) {
+  const needle = String(enrollment || '').trim()
+  if (!needle) throw new Error('Escribe tu matrícula')
+  const list = await fetchStudents(undefined, { force: true })
+  const found = findStudentByEnrollment(list, needle)
+  if (!found) throw new Error('Matrícula no registrada')
+  const talk_ids = await fetchStudentTalks(found)
+  return asStudentProfile({ ...found, talk_ids })
+}
+
+export function registerTalkAttendance(student, talkId) {
+  const talk_id = Number(talkId)
+  const enrollment_number = student?.enrollment_number
+  const student_id = extractStudentId(student)
+  const body = enrollment_number ? { enrollment_number, talk_id } : { student_id, talk_id }
+  return api('/student-talks', { method: 'POST', body })
+}
+
+export function createStudentRecord(payload, token) {
+  return api('/students', {
+    token,
+    method: 'POST',
+    body: {
+      enrollment_number: payload.enrollment_number,
+      card_number: payload.card_number,
+    },
+  }).then((res) => asStudentProfile(unwrapRecord(res)))
 }
 
 export function api(path, { token, method = 'GET', body, form } = {}) {
@@ -440,7 +357,7 @@ export function mapTalk(talk) {
     id: String(talk.id),
     rawId: talk.id,
     title: talk.name || talk.title || '',
-    speaker: talk.speaker || '',
+    speaker: talk.speaker || talk.company || '',
     start: start.toISOString(),
     end: end.toISOString(),
     image: talk.image_path || talk.image || '',

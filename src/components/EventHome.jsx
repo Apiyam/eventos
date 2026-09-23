@@ -1,30 +1,29 @@
-import { useSignIn, useUser } from '@clerk/clerk-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 
-export function EventHome({ attendee, onGoAgenda }) {
-  const { isSignedIn } = useUser()
-  const { signIn, setActive, isLoaded } = useSignIn()
+export function EventHome({ onLogin, onRegister, loginError = '' }) {
+  const [mode, setMode] = useState('login')
   const [matricula, setMatricula] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [nfc, setNfc] = useState('')
+  const [error, setError] = useState(loginError)
   const [busy, setBusy] = useState(false)
 
-  async function handleLogin(event) {
+  function switchMode(next) {
+    setMode(next)
+    setError('')
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault()
-    if (!isLoaded) return
     setBusy(true)
     setError('')
     try {
-      const result = await signIn.create({ identifier: matricula.trim(), password })
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId })
-        onGoAgenda()
-        return
+      if (mode === 'register') {
+        await onRegister({ enrollment_number: matricula.trim(), card_number: nfc.trim() })
+      } else {
+        await onLogin(matricula.trim())
       }
-      setError('Completa el registro para continuar.')
     } catch (err) {
-      setError(err.errors?.[0]?.longMessage || err.message || 'No se pudo iniciar sesión')
+      setError(err.message || (mode === 'register' ? 'No se pudo registrar' : 'No se pudo iniciar sesión'))
     } finally {
       setBusy(false)
     }
@@ -60,46 +59,47 @@ export function EventHome({ attendee, onGoAgenda }) {
 
       <section className="mostla-login">
         <div className="mostla-wrap">
-          {isSignedIn || attendee ? (
-            <>
-              <h2>Ingresa para comenzar tu experiencia</h2>
-              <button type="button" className="mostla-btn" onClick={onGoAgenda}>
-                Ir a la agenda
-              </button>
-            </>
-          ) : (
-            <form onSubmit={handleLogin}>
-              <h2>Ingresa para comenzar tu experiencia</h2>
+          <form onSubmit={handleSubmit}>
+            <h2>{mode === 'register' ? 'Regístrate para comenzar' : 'Ingresa para comenzar tu experiencia'}</h2>
+            <label>
+              Matrícula
+              <input
+                value={matricula}
+                onChange={(e) => setMatricula(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            {mode === 'register' ? (
               <label>
-                Matrícula
+                NFC
                 <input
-                  value={matricula}
-                  onChange={(e) => setMatricula(e.target.value)}
-                  autoComplete="username"
+                  value={nfc}
+                  onChange={(e) => setNfc(e.target.value)}
+                  autoCapitalize="characters"
                   required
                 />
               </label>
-              <label>
-                Contraseña
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-              </label>
-              {error ? <p className="error">{error}</p> : null}
-              <button className="mostla-btn" disabled={busy} type="submit">
-                Iniciar sesión
-              </button>
-              <p className="mostla-links">
-                <Link to="/sign-in">¿Has olvidado tu contraseña?</Link>
-                <br />
-                ¿Es tu primera vez? <Link to="/sign-up">Regístrate ahora.</Link>
-              </p>
-            </form>
-          )}
+            ) : null}
+            {error ? <p className="error">{error}</p> : null}
+            <button className="mostla-btn" disabled={busy} type="submit">
+              {mode === 'register' ? 'Registrarme' : 'Iniciar sesión'}
+            </button>
+            <p className="mostla-links">
+              {mode === 'register' ? (
+                <button type="button" className="mostla-text-link" onClick={() => switchMode('login')}>
+                  Ya tengo cuenta. Iniciar sesión
+                </button>
+              ) : (
+                <>
+                  ¿Es tu primera vez?{' '}
+                  <button type="button" className="mostla-text-link" onClick={() => switchMode('register')}>
+                    Regístrate aquí
+                  </button>
+                </>
+              )}
+            </p>
+          </form>
         </div>
       </section>
 

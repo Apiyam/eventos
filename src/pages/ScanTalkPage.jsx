@@ -1,10 +1,16 @@
-import { Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { CheckInModal } from '../components/CheckInModal'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
 import { useCodeScanner } from '../hooks/useCodeScanner'
-import { api, asStudentProfile, extractStudentId, extractTalkIds, fetchStudents, mapTalk, unwrapList } from '../lib/api'
-import { patchClerkPublic } from '../lib/clerk'
+import {
+  asStudentProfile,
+  extractStudentId,
+  fetchStudentTalks,
+  fetchStudents,
+  fetchTalks,
+  registerTalkAttendance,
+} from '../lib/api'
 import { findStudentByCode } from '../lib/nfc'
 import { formatTime } from '../lib/time'
 
@@ -17,25 +23,20 @@ export function ScanTalkPage({ token }) {
   const [talkId, setTalkId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [ok, setOk] = useState('')
+  const [accepted, setAccepted] = useState(false)
 
   useEffect(() => {
     fetchStudents(token, { force: true }).then(setStudents).catch((err) => setError(err.message))
-    api('/talks', { token })
-      .then((res) => setTalks(unwrapList(res).map(mapTalk)))
-      .catch(() => setTalks([]))
+    fetchTalks()
+      .then(setTalks)
+      .catch((err) => setError(err.message))
   }, [token])
 
   const assignedIds = useMemo(() => new Set(history.map(String)), [history])
   const available = talks.filter((talk) => !assignedIds.has(talk.id))
 
-  async function loadHistory(studentId) {
-    if (!studentId) {
-      setHistory([])
-      return []
-    }
-    const res = await api(`/student-talks/${studentId}`, { token })
-    const ids = extractTalkIds(res)
+  async function loadHistory(student) {
+    const ids = await fetchStudentTalks(student)
     setHistory(ids)
     return ids
   }
@@ -45,16 +46,15 @@ export function ScanTalkPage({ token }) {
     if (!found) {
       setProfile(null)
       setHistory([])
-      setError('No hay un estudiante con ese NFC o código.')
+      setError('No hay un estudiante con ese NFC o matrícula.')
       return
     }
     setError('')
-    setOk('')
     setCode(raw)
     setProfile(found)
     setTalkId('')
     try {
-      await loadHistory(found.student_id)
+      await loadHistory(found)
     } catch (err) {
       setHistory(found.talk_ids || [])
       setError(err.message)
@@ -68,37 +68,21 @@ export function ScanTalkPage({ token }) {
 
   async function acceptTalk() {
     if (!profile || !talkId) return
-    const studentId = extractStudentId(profile)
-    if (!studentId) {
-      setError('Este registro no tiene student_id.')
+    const talk = talks.find((item) => item.id === String(talkId))
+    if (!extractStudentId(profile) && !profile.enrollment_number) {
+      setError('Este registro no tiene matrícula.')
       return
     }
-    const talk = talks.find((item) => item.id === String(talkId))
     setBusy(true)
     setError('')
-    setOk('')
     try {
-      await api('/student-talks', {
-        token,
-        method: 'POST',
-        body: { student_id: studentId, talk_id: Number(talk?.rawId || talkId) },
-      })
-      const ids = await loadHistory(studentId).catch(() => [...assignedIds, String(talkId)])
-      const points = profile.staff ? Number(profile.points || 0) : Number(profile.points || 0) + Number(talk?.benefit || 0)
-      const next = asStudentProfile({ ...profile, points, talk_ids: ids })
+      await registerTalkAttendance(profile, talk?.rawId || talkId)
+      const ids = await loadHistory(profile).catch(() => [...assignedIds, String(talkId)])
+      const next = asStudentProfile({ ...profile, talk_ids: ids })
       setProfile(next)
-      setStudents((current) => current.map((row) => (row.student_id === studentId ? next : row)))
-      if (profile.clerk_user_id) {
-        await patchClerkPublic(profile.clerk_user_id, {
-          nfc_id: profile.nfc_id,
-          student_id: studentId,
-          staff: Boolean(profile.staff),
-          points,
-          talk_ids: ids,
-        }).catch(() => {})
-      }
+      setStudents((current) => current.map((row) => (row.student_id === next.student_id ? next : row)))
       setTalkId('')
-      setOk(`Asistencia registrada. +${talk?.benefit || 0} pts`)
+      setAccepted(true)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -111,7 +95,7 @@ export function ScanTalkPage({ token }) {
   return (
     <section className="dash-card staff-panel">
       <h3>Ingreso a plática</h3>
-      <p className="muted">Escanea el NFC o QR del estudiante, revisa su ficha y confirma la plática.</p>
+      <p className="muted">Escanea el NFC o QR del estudiante y confirma la plática.</p>
       <StaffScanBar
         videoRef={videoRef}
         scanning={scanning}
@@ -129,7 +113,7 @@ export function ScanTalkPage({ token }) {
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="NX-XXXX-XXXX-XXXX"
+          placeholder="NFC, QR o matrícula"
           autoCapitalize="characters"
         />
         <button className="dash-cta" type="submit">
@@ -138,7 +122,8 @@ export function ScanTalkPage({ token }) {
       </form>
 
       {scanError ? <p className="error">{scanError}</p> : null}
-      {scanHint || ok ? <p className="staff-ok">{scanHint || ok}</p> : null}
+      {scanHint ? <p className="staff-ok">{scanHint}</p> : null}
+      {error ? <p className="error">{error}</p> : null}
 
       {profile ? <StudentCredential student={profile} /> : null}
 
@@ -150,9 +135,7 @@ export function ScanTalkPage({ token }) {
               {historyTalks.map((talk) => (
                 <li key={talk.id}>
                   <strong>{talk.title}</strong>
-                  <span>
-                    {formatTime(talk.start)} · {talk.benefit} pts
-                  </span>
+                  <span>{formatTime(talk.start)}</span>
                 </li>
               ))}
             </ul>
@@ -166,16 +149,17 @@ export function ScanTalkPage({ token }) {
               <option value="">Selecciona una plática</option>
               {available.map((talk) => (
                 <option key={talk.id} value={talk.id}>
-                  {talk.title} · {formatTime(talk.start)} · {talk.benefit} pts
+                  {talk.title} · {formatTime(talk.start)}
                 </option>
               ))}
             </select>
           </label>
           <button className="dash-cta" type="button" disabled={busy || !talkId} onClick={acceptTalk}>
-            <Check size={16} /> Aceptar y sumar puntos
+            Registrar entrada
           </button>
         </>
       ) : null}
+      <CheckInModal open={accepted} onClose={() => setAccepted(false)} />
     </section>
   )
 }

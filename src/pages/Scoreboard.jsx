@@ -1,5 +1,4 @@
-import { api, imageUrl, mapTalk, mixStudentsWithClerk, unwrapList } from '../lib/api'
-import { fetchClerkUsers } from '../lib/clerk'
+import { api, asStudentProfile, fetchTalks, imageUrl, unwrapList } from '../lib/api'
 import { formatTime, parseTalkDate, talkStatus } from '../lib/time'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -13,14 +12,11 @@ function RankTable({ title, rows, start = 1 }) {
       </div>
       <ol>
         {rows.map((user, index) => (
-          <li key={user.clerk_user_id || user.id || user.email}>
+          <li key={user.enrollment_number || user.student_id || user.id}>
             <em>{start + index}.</em>
             {user.image_url ? <img src={user.image_url} alt="" /> : <i />}
-            <strong>
-              {user.full_name}
-              {user.staff ? <small>STAFF</small> : null}
-            </strong>
-            <b>{user.staff ? '∞' : user.points || 0}</b>
+            <strong>{user.full_name || user.enrollment_number}</strong>
+            <b>{user.points || 0}</b>
           </li>
         ))}
       </ol>
@@ -40,26 +36,18 @@ export function Scoreboard() {
   }, [])
 
   useEffect(() => {
-    Promise.all([
-      api('/students')
-        .then((res) => unwrapList(res))
-        .catch(() => []),
-      fetchClerkUsers({ force: true }),
-    ])
-      .then(([rows, clerks]) => setUsers(mixStudentsWithClerk(rows, clerks)))
+    api('/students')
+      .then((res) => setUsers(unwrapList(res).map(asStudentProfile)))
       .catch((err) => setError(err.message))
-    api('/talks')
-      .then((res) => setTalks(unwrapList(res).map(mapTalk)))
+    fetchTalks()
+      .then(setTalks)
       .catch(() => setTalks([]))
   }, [])
 
   const ranking = useMemo(() => {
     return [...users]
-      .filter((user) => user.full_name || user.email)
-      .sort((a, b) => {
-        if (a.staff !== b.staff) return a.staff ? -1 : 1
-        return Number(b.points || 0) - Number(a.points || 0)
-      })
+      .filter((user) => user.enrollment_number || user.full_name)
+      .sort((a, b) => Number(b.points || 0) - Number(a.points || 0))
       .slice(0, 8)
   }, [users])
 
@@ -114,7 +102,6 @@ export function Scoreboard() {
                     {talk.speaker ? <p>{talk.speaker}</p> : null}
                     <div className="board-card-meta">
                       <span>{live ? 'En curso' : 'Próxima'}</span>
-                      <span>+{talk.benefit || 0} pts</span>
                     </div>
                   </div>
                 </article>

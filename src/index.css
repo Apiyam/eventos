@@ -1682,8 +1682,15 @@ input {
   color: #222;
 }
 
-.mostla-links a {
+.mostla-links a,
+.mostla-text-link {
   color: #4b3dff;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .dash-person {
@@ -2250,4 +2257,154 @@ input {
 
 .login-card a {
   color: var(--blue);
+}
+
+.nfc-gate {
+  min-height: 100dvh;
+  background: var(--app);
+  padding: 20px 16px 32px;
+}
+
+.nfc-gate-top {
+  width: min(520px, 100%);
+  margin: 0 auto 16px;
+  color: var(--blue-deep);
+}
+
+.nfc-gate-top p {
+  margin: 0;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nfc-gate-top h1 {
+  margin: 6px 0 0;
+  font-size: 28px;
+}
+
+.nfc-gate-top strong,
+.nfc-gate-talk {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue);
+}
+
+.nfc-gate-card {
+  width: min(520px, 100%);
+  margin: 0 auto;
+}
+
+.checkin-ok {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  margin: 0;
+  width: 100%;
+  background: rgba(12, 40, 24, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  cursor: pointer;
+}
+
+.checkin-ok-card {
+  width: min(420px, 100%);
+  min-height: 320px;
+  background: #1f8f4e;
+  color: #fff;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 20px;
+  padding: 36px 24px;
+  box-shadow: 0 24px 60px rgba(12, 40, 24, 0.35);
+}
+
+.checkin-ok-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1f8f4e;
+  display: grid;
+  place-items: center;
+}
+
+.checkin-ok-card h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.pass-frame {
+  padding-bottom: 24px;
+}
+
+.pass-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 8;
+}
+
+.pass-screen {
+  display: grid;
+  gap: 22px;
+}
+
+.pass-hero {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 22px 16px 8px;
+  text-align: center;
+}
+
+.pass-hero img {
+  width: 220px;
+  height: 220px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pass-points span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pass-points strong {
+  font-size: 42px;
+  line-height: 1;
+  color: var(--blue-deep);
+}
+
+.pass-nfc,
+.pass-enroll {
+  margin: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.pass-nfc {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--blue-deep);
+}
+
+.pass-block h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
 }

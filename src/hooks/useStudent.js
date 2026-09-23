@@ -1,96 +1,96 @@
-import { useClerk, useUser } from '@clerk/clerk-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { api, getAdminToken, localStudent, registerStudent, setAdminToken, unwrapToken, unwrapUser, writeStudentCache } from '../lib/api'
-import { patchClerkPublic } from '../lib/clerk'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  api,
+  createStudentRecord,
+  getAdminToken,
+  getStudentEnrollment,
+  loginStudentByEnrollment,
+  setAdminToken,
+  setStudentEnrollment,
+  unwrapToken,
+  unwrapUser,
+} from '../lib/api'
 
 export function useStudent() {
-  const { isSignedIn, isLoaded, user } = useUser()
-  const { signOut } = useClerk()
-  const [student, setStudentState] = useState(null)
+  const [student, setStudent] = useState(null)
   const [error, setError] = useState('')
-  const syncOnce = useRef('')
+  const [ready, setReady] = useState(false)
 
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user) {
-      setStudentState(null)
-      syncOnce.current = ''
-      return
-    }
-    const meta = user.publicMetadata || {}
-    const next = localStudent(user, {
-      nfc_id: meta.nfc_id,
-      student_id: meta.student_id,
-      staff: Boolean(meta.staff),
-      points: meta.staff ? 0 : meta.points,
-      talk_ids: Array.isArray(meta.talk_ids) ? meta.talk_ids.map(String) : undefined,
-    })
-    setStudentState(next)
+  const hydrate = useCallback(async (enrollment) => {
+    const next = await loginStudentByEnrollment(enrollment)
+    setStudent(next)
+    setStudentEnrollment(next.enrollment_number)
     setError('')
-    if ((!meta.nfc_id || !meta.student_id) && syncOnce.current !== user.id) {
-      syncOnce.current = user.id
-      registerStudent(user.id, {
-        ...meta,
-        full_name: user.fullName || '',
-        email: user.primaryEmailAddress?.emailAddress || '',
-      })
-        .then((student) => {
-          writeStudentCache(user.id, student)
-          return user.reload()
-        })
-        .catch((err) => setError(err.message))
-    } else if (next.nfc_id && next.student_id) {
-      writeStudentCache(user.id, next)
-    }
-  }, [isLoaded, isSignedIn, user])
+    return next
+  }, [])
 
   useEffect(() => {
-    if (!user) return undefined
-    const onFocus = () => {
-      user.reload().catch(() => {})
+    const enrollment = getStudentEnrollment()
+    if (!enrollment) {
+      setReady(true)
+      return undefined
     }
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [user])
-
-  const setStudent = useCallback((value) => {
-    setStudentState((current) => {
-      const next = typeof value === 'function' ? value(current) : value
-      if (next?.clerk_user_id) {
-        writeStudentCache(next.clerk_user_id, next)
-        if (!next.staff) {
-          patchClerkPublic(next.clerk_user_id, {
-            points: next.points || 0,
-            nfc_id: next.nfc_id,
-            student_id: next.student_id || next.id || 0,
-            talk_ids: next.talk_ids || [],
-          }).catch(() => {})
+    let cancelled = false
+    hydrate(enrollment)
+      .catch(() => {
+        if (!cancelled) {
+          setStudentEnrollment('')
+          setStudent(null)
         }
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [hydrate])
+
+  const login = useCallback(
+    async (enrollment) => {
+      setError('')
+      return hydrate(enrollment)
+    },
+    [hydrate],
+  )
+
+  const register = useCallback(
+    async ({ enrollment_number, card_number }) => {
+      setError('')
+      const created = await createStudentRecord({
+        enrollment_number: String(enrollment_number || '').trim(),
+        card_number: String(card_number || '').trim(),
+      })
+      try {
+        return await hydrate(enrollment_number)
+      } catch {
+        setStudent(created)
+        setStudentEnrollment(created.enrollment_number)
+        return created
       }
-      return next
-    })
+    },
+    [hydrate],
+  )
+
+  const checkout = useCallback(() => {
+    setStudentEnrollment('')
+    setStudent(null)
   }, [])
 
   const attendee = useMemo(() => {
-    if (!student || !user) return null
+    if (!student) return null
     return {
       id: student.id,
       studentId: student.student_id || student.id,
-      clerkId: student.clerk_user_id,
-      name: student.full_name || user.fullName || 'Asistente',
-      email: student.email || user.primaryEmailAddress?.emailAddress || '',
-      nfcId: student.nfc_id,
-      points: student.staff ? Number.POSITIVE_INFINITY : student.points ?? 0,
-      staff: Boolean(student.staff),
+      name: student.full_name || student.enrollment_number || 'Asistente',
+      enrollment: student.enrollment_number,
+      nfcId: student.card_number || student.nfc_id,
+      points: student.points ?? 0,
       talkIds: (student.talk_ids || []).map(String),
     }
-  }, [student, user])
+  }, [student])
 
-  const checkout = useCallback(async () => {
-    await signOut()
-    setStudent(null)
-  }, [signOut])
-
-  return { attendee, student, setStudent, error, ready: isLoaded, signedIn: Boolean(isSignedIn), checkout }
+  return { attendee, student, setStudent, error, ready, signedIn: Boolean(student), login, register, checkout }
 }
 
 export function useAdminSession() {
@@ -144,8 +144,4 @@ export function useAdminSession() {
   }, [token])
 
   return { token, profile, ready, login, logout }
-}
-
-export function clerkEnabled() {
-  return Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 }

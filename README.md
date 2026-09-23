@@ -1,18 +1,17 @@
-# NEXUS 2026
+# MOSTLA DAY 2026
 
-SPA Vite + API Express en memoria (sin base de datos). Asistentes con Clerk. Admin con la colección Postman.
+SPA Vite contra la API real de Staging.
 
 ## Arranque
 
-1. Copia `.env.example` a `.env` y pon `VITE_CLERK_PUBLISHABLE_KEY`.
-2. `npm install`
-3. `npm run dev`
-4. App: `http://localhost:5173`
-5. API: `http://localhost:8000/api`
+1. `npm install`
+2. `npm run dev`
+3. App: `http://localhost:5173`
 
-## Cuentas
+La API es `https://vexom.com.mx/back_tec_nfc/public/api/v1/`.
 
-- Asistente: `/sign-up` (Clerk, obligatorio).
-- Admin dashboard: `/admin` → `admin@nexus.local` / `admin1234`
+## Rutas
 
-La API replica Auth, Users, Students, Store, Images y Talks de la colección. Si más adelante hay staging (`AdmStg`), se apunta el proxy ahí.
+- Asistente: `/` con matrícula
+- Check-in: `/nfc/{card}` (la ruta siempre existe)
+- Admin: `/admin`

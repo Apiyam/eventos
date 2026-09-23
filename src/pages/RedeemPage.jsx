@@ -4,7 +4,6 @@ import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
 import { useCodeScanner } from '../hooks/useCodeScanner'
 import { api, asStudentProfile, extractStudentId, fetchStoreCatalog, fetchStudents } from '../lib/api'
-import { patchClerkPublic } from '../lib/clerk'
 import { findStudentByCode } from '../lib/nfc'
 
 export function RedeemPage({ token }) {
@@ -73,15 +72,6 @@ export function RedeemPage({ token }) {
       const next = asStudentProfile({ ...profile, points: remaining })
       setProfile(next)
       setStudents((current) => current.map((row) => (row.student_id === studentId ? next : row)))
-      if (profile.clerk_user_id) {
-        await patchClerkPublic(profile.clerk_user_id, {
-          nfc_id: profile.nfc_id,
-          student_id: studentId,
-          staff: Boolean(profile.staff),
-          points: remaining,
-          talk_ids: profile.talk_ids || [],
-        }).catch(() => {})
-      }
       setStore((current) =>
         current.map((row) =>
           row.id === product.id ? { ...row, quantity: Math.max(0, Number(row.quantity || 0) - amount) } : row,
@@ -116,7 +106,7 @@ export function RedeemPage({ token }) {
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="NFC, QR o student_id"
+          placeholder="NFC, QR o matrícula"
           autoCapitalize="characters"
         />
         <button className="dash-cta" type="submit">

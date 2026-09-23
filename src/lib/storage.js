@@ -2,7 +2,6 @@ const KEYS = {
   attendee: 'nexus.attendee',
   selection: 'nexus.selection',
   notified: 'nexus.notified',
-  demoOffset: 'nexus.demoOffset',
 }
 
 function read(key, fallback) {
@@ -28,10 +27,4 @@ export const storage = {
 
   getNotified: () => read(KEYS.notified, []),
   setNotified: (ids) => write(KEYS.notified, ids),
-
-  getDemoOffset: () => {
-    const stored = read(KEYS.demoOffset, null)
-    return typeof stored === 'number' ? stored : null
-  },
-  setDemoOffset: (ms) => write(KEYS.demoOffset, ms),
 }

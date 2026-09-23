@@ -1,7 +1,7 @@
 import { Nfc } from 'lucide-react'
 
 function initials(student) {
-  const name = student?.full_name || [student?.first_name, student?.last_name].filter(Boolean).join(' ')
+  const name = student?.full_name || student?.enrollment_number
   const parts = String(name || '')
     .trim()
     .split(/\s+/)
@@ -16,12 +16,13 @@ function initials(student) {
 
 export function StudentCredential({ student }) {
   if (!student) return null
-  const name = student.full_name || [student.first_name, student.last_name].filter(Boolean).join(' ') || 'Asistente'
+  const name = student.full_name || student.enrollment_number || 'Asistente'
+  const card = student.card_number || student.nfc_id || 'Sin NFC'
   return (
-    <article className={`id-card ${student.staff ? 'is-staff' : ''}`}>
+    <article className="id-card">
       <header className="id-card-band">
         <span>MOSTLA DAY 2026</span>
-        <em>{student.staff ? 'STAFF' : 'ASISTENTE'}</em>
+        <em>ASISTENTE</em>
       </header>
       <div className="id-card-body">
         <div className="id-card-photo">
@@ -29,15 +30,11 @@ export function StudentCredential({ student }) {
         </div>
         <div className="id-card-meta">
           <h3>{name}</h3>
-          <p>{student.email || 'Sin correo'}</p>
+          <p>{student.enrollment_number || 'Sin matrícula'}</p>
           <p className="id-card-nfc">
             <Nfc size={14} />
-            {student.nfc_id || 'Sin NFC'}
+            {card}
           </p>
-          <div className="id-card-stats">
-            <span>ID {student.student_id || '—'}</span>
-            <b>{student.staff ? '∞ pts' : `${student.points || 0} pts`}</b>
-          </div>
         </div>
       </div>
     </article>
