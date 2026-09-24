@@ -13,6 +13,7 @@ import {
   QrCode,
   Share2,
   Star,
+  Ticket,
   ThumbsUp,
   Users,
   X,
@@ -20,6 +21,7 @@ import {
 import { DateTimePicker } from '../components/DateTimePicker'
 import { api, createStudentRecord, fetchStudents, imageUrl, unwrapImagePath, unwrapList } from '../lib/api'
 import { publicNfcUrl } from '../lib/nfc'
+import { RafflePage } from './RafflePage'
 import { RedeemPage } from './RedeemPage'
 import { ScanTalkPage } from './ScanTalkPage'
 
@@ -273,6 +275,7 @@ export function AdminDashboard({ token, profile, onLogout }) {
     { id: 'home', label: 'Inicio', icon: Home },
     { id: 'scan', label: 'Ingreso', icon: QrCode },
     { id: 'redeem', label: 'Canje', icon: Gift },
+    { id: 'raffle', label: 'Rifa', icon: Ticket },
     { id: 'talks', label: 'Charlas', icon: Folder },
     { id: 'students', label: 'Asistentes', icon: MessageSquare },
     { id: 'users', label: 'Usuarios', icon: Bell },
@@ -336,6 +339,7 @@ export function AdminDashboard({ token, profile, onLogout }) {
 
         {tab === 'scan' ? <ScanTalkPage token={token} /> : null}
         {tab === 'redeem' ? <RedeemPage token={token} /> : null}
+        {tab === 'raffle' ? <RafflePage /> : null}
 
         {tab === 'talks' ? (
           <section className="dash-card dash-table-wrap">
@@ -666,6 +670,7 @@ export function AdminDashboard({ token, profile, onLogout }) {
               <input
                 value={studentForm.enrollment_number}
                 onChange={(e) => setStudentForm({ ...studentForm, enrollment_number: e.target.value })}
+                placeholder="A0 / L0"
                 required
               />
             </label>

@@ -66,6 +66,7 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
               <input
                 value={matricula}
                 onChange={(e) => setMatricula(e.target.value)}
+                placeholder="A0 / L0"
                 autoComplete="username"
                 required
               />

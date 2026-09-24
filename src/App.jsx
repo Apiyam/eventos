@@ -4,6 +4,7 @@ import { useAdminSession, useStudent } from './hooks/useStudent'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { AdminLogin } from './pages/AdminLogin'
 import { NfcCheckinPage } from './pages/NfcCheckinPage'
+import { RafflePage } from './pages/RafflePage'
 import { Scoreboard } from './pages/Scoreboard'
 import { StudentPassPage } from './pages/StudentPassPage'
 
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/nfc/:code" element={<NfcCheckinPage />} />
         <Route path="/nfc" element={<NfcCheckinPage />} />
         <Route path="/marcador" element={<Scoreboard />} />
+        <Route path="/rifa" element={<RafflePage standalone />} />
         <Route path="/admin/*" element={<AdminRoot />} />
         <Route path="/*" element={<StudentRoot />} />
       </Routes>

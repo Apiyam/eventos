@@ -233,6 +233,24 @@ export async function fetchTalks() {
   return unwrapList(await parse(res)).map(mapTalk)
 }
 
+export async function fetchEventStudents(eventId) {
+  const id = String(eventId || '').trim()
+  if (!id) return []
+  try {
+    const talk = unwrapRecord(await api(`/talks/${id}`))
+    const nested = talk?.students || talk?.alumnos || talk?.enrolled || []
+    if (Array.isArray(nested) && nested.length) {
+      return nested.map(asStudentProfile).filter(Boolean)
+    }
+  } catch {
+    /* fallback below */
+  }
+  const rows = unwrapList(await api('/student-talks')).filter(
+    (row) => String(row.talk_id || row.talk?.id || '') === id,
+  )
+  return rows.map((row) => asStudentProfile(row.student || row)).filter(Boolean)
+}
+
 export async function fetchStudentTalks(student) {
   if (Array.isArray(student?.talks) && student.talks.length) {
     return extractTalkIds({ data: student.talks })

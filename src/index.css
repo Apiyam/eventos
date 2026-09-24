@@ -2241,6 +2241,16 @@ input {
   margin: 0;
 }
 
+.raffle-page {
+  width: min(720px, 100%);
+  margin: 24px auto;
+}
+
+tr.is-winner td {
+  background: #e8f7ee;
+  font-weight: 700;
+}
+
 .dash-card select {
   width: 100%;
   margin-top: 6px;
