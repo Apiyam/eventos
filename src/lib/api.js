@@ -1,6 +1,7 @@
 import { parseTalkDate } from './time'
 
 const ADMIN_TOKEN_KEY = 'eventos.admin.token'
+const ADMIN_PROFILE_KEY = 'eventos.admin.profile'
 
 const REAL_API = 'https://vexom.com.mx/back_tec_nfc/public/api/v1'
 
@@ -11,7 +12,7 @@ function resolveRemote() {
 }
 
 const remote = resolveRemote()
-const API = remote
+const API = '/api'
 
 export function getAdminToken() {
   try {
@@ -25,6 +26,24 @@ export function setAdminToken(token) {
   try {
     if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token)
     else localStorage.removeItem(ADMIN_TOKEN_KEY)
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function getAdminProfile() {
+  try {
+    const raw = localStorage.getItem(ADMIN_PROFILE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function setAdminProfile(profile) {
+  try {
+    if (profile) localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(profile))
+    else localStorage.removeItem(ADMIN_PROFILE_KEY)
   } catch {
     /* private mode / quota */
   }
@@ -72,8 +91,25 @@ export function unwrapRecord(res) {
   return res
 }
 
+function asToken(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'object') {
+    return asToken(value.plainTextToken || value.access_token || value.token || value.value)
+  }
+  return ''
+}
+
 export function unwrapToken(res) {
-  return res?.token || res?.access_token || res?.data?.token || res?.data?.access_token || ''
+  return (
+    asToken(res?.plainTextToken) ||
+    asToken(res?.token) ||
+    asToken(res?.access_token) ||
+    asToken(res?.data?.plainTextToken) ||
+    asToken(res?.data?.token) ||
+    asToken(res?.data?.access_token) ||
+    asToken(res?.data?.data?.token)
+  )
 }
 
 export function unwrapUser(res) {
@@ -195,7 +231,7 @@ export function asStudentProfile(row) {
     enrollment_number,
     card_number,
     nfc_id: card_number,
-    full_name: row.full_name || enrollment_number || 'Asistente',
+    full_name: row.full_name || enrollment_number || 'Estudiante',
     email: row.email || '',
     image_url: row.image_url || '',
     points: studentPoints(row),
@@ -228,9 +264,8 @@ export async function fetchStudents(token, { force = false } = {}) {
   return directoryJob
 }
 
-export async function fetchTalks() {
-  const res = await fetch(`${remote}/talks`, { headers: { Accept: 'application/json' } })
-  return unwrapList(await parse(res)).map(mapTalk)
+export async function fetchTalks(token) {
+  return unwrapList(await api('/talks', { token })).map(mapTalk)
 }
 
 export async function fetchEventStudents(eventId) {
@@ -321,51 +356,9 @@ export function api(path, { token, method = 'GET', body, form } = {}) {
   }).then(parse)
 }
 
-export async function fetchStoreCatalog() {
-  const from = async (path) => unwrapList(await api(path)).filter((row) => row?.id != null)
-  let catalog = []
-  try {
-    catalog = await from('/store')
-  } catch {
-    catalog = []
-  }
-  if (catalog.length > 1) return catalog
-  try {
-    const first = await from('/store/1')
-    if (first.length > 1) return first
-    const seen = new Set(catalog.map((item) => item.id))
-    for (const row of first) {
-      if (!seen.has(row.id)) {
-        seen.add(row.id)
-        catalog.push(row)
-      }
-    }
-    let misses = 0
-    for (let id = 1; id <= 30; id += 1) {
-      if (seen.has(id)) continue
-      try {
-        const rows = await from(`/store/${id}`)
-        if (!rows.length) {
-          misses += 1
-          if (misses >= 3) break
-          continue
-        }
-        misses = 0
-        for (const row of rows) {
-          if (!seen.has(row.id)) {
-            seen.add(row.id)
-            catalog.push(row)
-          }
-        }
-      } catch {
-        misses += 1
-        if (misses >= 3) break
-      }
-    }
-  } catch {
-    return catalog
-  }
-  return catalog
+export async function fetchStoreList(token) {
+  const rows = unwrapList(await api('/store', { token }))
+  return rows.filter((row) => row?.id != null && (row?.product != null || row?.name != null))
 }
 
 export function mapTalk(talk) {

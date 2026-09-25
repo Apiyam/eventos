@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   api,
   createStudentRecord,
+  getAdminProfile,
   getAdminToken,
   getStudentEnrollment,
   loginStudentByEnrollment,
+  setAdminProfile,
   setAdminToken,
   setStudentEnrollment,
   unwrapToken,
@@ -82,7 +84,7 @@ export function useStudent() {
     return {
       id: student.id,
       studentId: student.student_id || student.id,
-      name: student.full_name || student.enrollment_number || 'Asistente',
+      name: student.full_name || student.enrollment_number || 'Estudiante',
       enrollment: student.enrollment_number,
       nfcId: student.card_number || student.nfc_id,
       points: student.points ?? 0,
@@ -95,29 +97,34 @@ export function useStudent() {
 
 export function useAdminSession() {
   const [token, setToken] = useState(() => getAdminToken())
-  const [profile, setProfile] = useState(null)
-  const [ready, setReady] = useState(false)
+  const [profile, setProfile] = useState(() => getAdminProfile())
+  const [ready, setReady] = useState(() => Boolean(getAdminProfile()))
 
   useEffect(() => {
     let cancelled = false
     const stored = getAdminToken()
-    if (!stored) {
+    const cached = getAdminProfile()
+    if (!stored && !cached) {
       setReady(true)
       return undefined
     }
+    setReady(true)
     api('/auth/profile', { token: stored })
       .then((res) => {
-        if (!cancelled) setProfile(unwrapUser(res))
+        if (cancelled) return
+        const user = unwrapUser(res)
+        if (user?.id || user?.email) {
+          setProfile(user)
+          setAdminProfile(user)
+        }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && !cached) {
           setAdminToken('')
+          setAdminProfile(null)
           setToken('')
           setProfile(null)
         }
-      })
-      .finally(() => {
-        if (!cancelled) setReady(true)
       })
     return () => {
       cancelled = true
@@ -130,6 +137,7 @@ export function useAdminSession() {
     if (!nextUser?.id && !nextUser?.email) throw new Error('Login incompleto')
     const nextToken = unwrapToken(res)
     setAdminToken(nextToken)
+    setAdminProfile(nextUser)
     setToken(nextToken)
     setProfile(nextUser)
     setReady(true)
@@ -139,6 +147,7 @@ export function useAdminSession() {
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST', token }).catch(() => {})
     setAdminToken('')
+    setAdminProfile(null)
     setToken('')
     setProfile(null)
   }, [token])

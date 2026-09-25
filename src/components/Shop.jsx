@@ -1,12 +1,12 @@
 import { ShoppingBag } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetchStoreCatalog } from '../lib/api'
+import { fetchStoreList } from '../lib/api'
 
 export function Shop({ student }) {
   const [items, setItems] = useState([])
 
   useEffect(() => {
-    fetchStoreCatalog()
+    fetchStoreList()
       .then(setItems)
       .catch(() => setItems([]))
   }, [])

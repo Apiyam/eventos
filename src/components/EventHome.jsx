@@ -73,7 +73,7 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
             </label>
             {mode === 'register' ? (
               <label>
-                NFC
+                Tarjeta NFC
                 <input
                   value={nfc}
                   onChange={(e) => setNfc(e.target.value)}

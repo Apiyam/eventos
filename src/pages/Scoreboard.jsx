@@ -7,7 +7,7 @@ function RankTable({ title, rows, start = 1 }) {
     <section className="board-table">
       <h2 className="board-block-title">{title}</h2>
       <div className="board-table-head">
-        <span>Asistente</span>
+        <span>Estudiante</span>
         <span>PTS</span>
       </div>
       <ol>

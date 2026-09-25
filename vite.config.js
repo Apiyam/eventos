@@ -16,7 +16,20 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: target.origin,
           changeOrigin: true,
+          cookieDomainRewrite: 'localhost',
           rewrite: (path) => `${target.pathname}${path.replace(/^\/api/, '')}`,
+          configure(proxy) {
+            proxy.on('proxyRes', (proxyRes) => {
+              const cookies = proxyRes.headers['set-cookie']
+              if (!cookies) return
+              proxyRes.headers['set-cookie'] = cookies.map((cookie) =>
+                `${cookie
+                  .replace(/;\s*Secure/gi, '')
+                  .replace(/;\s*Domain=[^;]*/gi, '')
+                  .replace(/;\s*Path=[^;]*/gi, '')}; Path=/`,
+              )
+            })
+          },
         },
       },
     },
@@ -25,7 +38,20 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: target.origin,
           changeOrigin: true,
+          cookieDomainRewrite: 'localhost',
           rewrite: (path) => `${target.pathname}${path.replace(/^\/api/, '')}`,
+          configure(proxy) {
+            proxy.on('proxyRes', (proxyRes) => {
+              const cookies = proxyRes.headers['set-cookie']
+              if (!cookies) return
+              proxyRes.headers['set-cookie'] = cookies.map((cookie) =>
+                `${cookie
+                  .replace(/;\s*Secure/gi, '')
+                  .replace(/;\s*Domain=[^;]*/gi, '')
+                  .replace(/;\s*Path=[^;]*/gi, '')}; Path=/`,
+              )
+            })
+          },
         },
       },
     },

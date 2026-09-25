@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
 import { useCodeScanner } from '../hooks/useCodeScanner'
-import { api, asStudentProfile, extractStudentId, fetchStoreCatalog, fetchStudents } from '../lib/api'
+import { notifyError, notifySuccess } from '../lib/alert'
+import { api, asStudentProfile, extractStudentId, fetchStoreList, fetchStudents } from '../lib/api'
 import { findStudentByCode } from '../lib/nfc'
 
 export function RedeemPage({ token }) {
@@ -13,21 +14,17 @@ export function RedeemPage({ token }) {
   const [profile, setProfile] = useState(null)
   const [qty, setQty] = useState(1)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [ok, setOk] = useState('')
 
   function lookup(raw, list = students) {
-    setError('')
-    setOk('')
     const found = findStudentByCode(list, raw || code)
     if (!found) {
       setProfile(null)
-      setError('No hay un estudiante con ese NFC o código.')
+      notifyError('No encontrado', 'No hay un estudiante con ese NFC o código.')
       return
     }
     if (!extractStudentId(found)) {
       setProfile(found)
-      setError('Este registro no tiene student_id.')
+      notifyError('Registro incompleto', 'Este registro no tiene student_id.')
       return
     }
     setCode(raw || code)
@@ -40,8 +37,8 @@ export function RedeemPage({ token }) {
   })
 
   useEffect(() => {
-    fetchStudents(token, { force: true }).then(setStudents).catch((err) => setError(err.message))
-    fetchStoreCatalog().then(setStore).catch(() => setStore([]))
+    fetchStudents(token, { force: true }).then(setStudents).catch((err) => notifyError('No se pudieron cargar los estudiantes', err.message))
+    fetchStoreList(token).then(setStore).catch(() => setStore([]))
   }, [token])
 
   async function redeem(product) {
@@ -51,12 +48,10 @@ export function RedeemPage({ token }) {
     const cost = Number(product.cost || 0) * amount
     const points = Number(profile.points || 0)
     if (!profile.staff && points < cost) {
-      setError('Saldo insuficiente.')
+      notifyError('Saldo insuficiente')
       return
     }
     setBusy(true)
-    setError('')
-    setOk('')
     try {
       await api(`/store/${product.id}`, {
         token,
@@ -77,9 +72,9 @@ export function RedeemPage({ token }) {
           row.id === product.id ? { ...row, quantity: Math.max(0, Number(row.quantity || 0) - amount) } : row,
         ),
       )
-      setOk(`Canje de ${product.product} listo.`)
+      await notifySuccess('Canje listo', product.product)
     } catch (err) {
-      setError(err.message)
+      await notifyError('No se pudo canjear', err.message)
     } finally {
       setBusy(false)
     }
@@ -113,8 +108,8 @@ export function RedeemPage({ token }) {
           Buscar
         </button>
       </form>
-      {scanError ? <p className="error">{scanError}</p> : null}
-      {scanHint || ok ? <p className="staff-ok">{scanHint || ok}</p> : null}
+      {scanError ? <p className="muted">{scanError}</p> : null}
+      {scanHint ? <p className="muted">{scanHint}</p> : null}
 
       {profile ? <StudentCredential student={profile} /> : null}
 

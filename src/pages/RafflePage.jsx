@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { FilterableTable } from '../components/FilterableTable'
+import { notifyError, notifySuccess } from '../lib/alert'
 import { fetchEventStudents, fetchTalks } from '../lib/api'
 
 export function RafflePage({ standalone = false }) {
@@ -6,13 +8,12 @@ export function RafflePage({ standalone = false }) {
   const [eventId, setEventId] = useState('')
   const [students, setStudents] = useState([])
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
   const [winner, setWinner] = useState(null)
 
   useEffect(() => {
     fetchTalks()
       .then(setTalks)
-      .catch((err) => setError(err.message))
+      .catch((err) => notifyError('No se pudieron cargar las pláticas', err.message))
   }, [])
 
   useEffect(() => {
@@ -23,15 +24,16 @@ export function RafflePage({ standalone = false }) {
     }
     let cancelled = false
     setBusy(true)
-    setError('')
     fetchEventStudents(eventId)
       .then((list) => {
-        if (!cancelled) setStudents(list)
+        if (!cancelled) {
+          setStudents(list.filter((row) => /^A/i.test(String(row.enrollment_number || ''))))
+        }
       })
       .catch((err) => {
         if (!cancelled) {
           setStudents([])
-          setError(err.message)
+          notifyError('No se pudieron cargar los inscritos', err.message)
         }
       })
       .finally(() => {
@@ -42,9 +44,11 @@ export function RafflePage({ standalone = false }) {
     }
   }, [eventId])
 
-  function draw() {
+  async function draw() {
     if (!students.length) return
-    setWinner(students[Math.floor(Math.random() * students.length)])
+    const picked = students[Math.floor(Math.random() * students.length)]
+    setWinner(picked)
+    await notifySuccess('Ganador', picked.enrollment_number || picked.card_number || '')
   }
 
   return (
@@ -66,35 +70,24 @@ export function RafflePage({ standalone = false }) {
           ))}
         </select>
       </label>
-      {error ? <p className="error">{error}</p> : null}
-      {winner ? (
-        <p className="staff-ok">
-          {winner.enrollment_number || winner.card_number}
-        </p>
-      ) : null}
       {busy ? <p className="muted">Cargando inscritos…</p> : null}
-      <table>
-        <thead>
-          <tr>
-            <th>Matrícula</th>
-            <th>NFC</th>
-          </tr>
-        </thead>
-        <tbody>
-          {students.map((row) => (
-            <tr
-              key={row.enrollment_number || row.student_id || row.id}
-              className={
-                winner && String(winner.enrollment_number) === String(row.enrollment_number) ? 'is-winner' : ''
-              }
-            >
-              <td className="dash-mono">{row.enrollment_number || '—'}</td>
-              <td className="dash-mono">{row.card_number || row.nfc_id || '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {eventId && !busy && !students.length ? <p className="muted">No hay inscritos en este evento.</p> : null}
+      <FilterableTable
+        rows={students}
+        rowKey={(row) => row.enrollment_number || row.student_id || row.id}
+        emptyText={eventId ? 'No hay inscritos en este evento.' : 'Selecciona una plática o taller.'}
+        rowClassName={(row) =>
+          winner && String(winner.enrollment_number) === String(row.enrollment_number) ? 'is-winner' : ''
+        }
+        columns={[
+          { key: 'enrollment_number', label: 'Matrícula', className: 'dash-mono' },
+          {
+            key: 'card_number',
+            label: 'NFC',
+            className: 'dash-mono',
+            value: (row) => row.card_number || row.nfc_id,
+          },
+        ]}
+      />
     </section>
   )
 }

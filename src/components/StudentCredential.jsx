@@ -16,13 +16,13 @@ function initials(student) {
 
 export function StudentCredential({ student }) {
   if (!student) return null
-  const name = student.full_name || student.enrollment_number || 'Asistente'
+  const name = student.full_name || student.enrollment_number || 'Estudiante'
   const card = student.card_number || student.nfc_id || 'Sin NFC'
   return (
     <article className="id-card">
       <header className="id-card-band">
         <span>MOSTLA DAY 2026</span>
-        <em>ASISTENTE</em>
+        <em>ESTUDIANTE</em>
       </header>
       <div className="id-card-body">
         <div className="id-card-photo">
