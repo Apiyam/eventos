@@ -23,7 +23,7 @@ export function AdminStudents() {
   }
 
   useEffect(() => {
-    loadStudents().catch((err) => notifyError('No se pudieron cargar los estudiantes', err.message))
+    loadStudents().catch((err) => notifyError('No se pudieron cargar los estudiantes, por favor intente d enuevo más tarde o contacte al administrador.', err.message))
   }, [token])
 
   async function saveStudent(event) {
