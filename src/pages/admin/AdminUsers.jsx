@@ -166,7 +166,7 @@ export function AdminUsers() {
   async function toggleUser(user) {
     if (!viewerIsManager) return
     try {
-      await api(`/users/${user.id}/toggle-access`, { token, method: 'PUT' })
+      await api(`/toggle-access/${user.id}`, { token, method: 'POST' })
       await loadUsers()
       await notifySuccess(isActive(user) ? 'Usuario desactivado' : 'Usuario activado')
     } catch (err) {
