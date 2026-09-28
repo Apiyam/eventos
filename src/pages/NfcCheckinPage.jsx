@@ -129,6 +129,15 @@ export function NfcCheckinPage() {
     }
   }
 
+  function clearStudent() {
+    setAccepted(false)
+    setProfile(null)
+    setHistory([])
+    setCode('')
+    setError('')
+    if (!lockedTalk) setTalkId('')
+  }
+
   const historyTalks = talks.filter((talk) => assignedIds.has(talk.id))
   const selectedTalkId = lockedTalk?.id || talkId
 
@@ -210,7 +219,7 @@ export function NfcCheckinPage() {
         ) : null}
       </section>
 
-      <CheckInModal open={accepted} onClose={() => setAccepted(false)} />
+      <CheckInModal open={accepted} onClose={clearStudent} />
     </div>
   )
 }

@@ -38,6 +38,9 @@ export function AdminLogin({ onLogin }) {
         <button className="dash-cta" disabled={busy} type="submit">
           Iniciar sesión
         </button>
+        <p className="muted">
+          <a href="/verificar">Tengo un código de verificación</a>
+        </p>
       </form>
     </div>
   )

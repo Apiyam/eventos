@@ -5,6 +5,13 @@ import { FilterableTable } from '../../components/FilterableTable'
 import { confirmAction, notifyError, notifySuccess } from '../../lib/alert'
 import { api, unwrapList } from '../../lib/api'
 
+const STAFF_ROLES = [
+  { id: 1, name: 'Superuser' },
+  { id: 2, name: 'Administrador' },
+  { id: 3, name: 'Tienda' },
+  { id: 4, name: 'Platicas' },
+]
+
 const emptyUser = {
   full_name: '',
   email: '',
@@ -18,8 +25,24 @@ function userRole(user) {
   return String(user?.metadata?.role || user?.role || '').trim()
 }
 
+function roleIdFromName(name) {
+  const found = STAFF_ROLES.find((role) => role.name.toLowerCase() === String(name || '').toLowerCase())
+  if (found) return found.id
+  if (/^admin$/i.test(name)) return 2
+  return 2
+}
+
+function roleNameFromId(id) {
+  return STAFF_ROLES.find((role) => role.id === Number(id))?.name || 'Administrador'
+}
+
 function isSuperUser(user) {
-  return /^super\s*user$/i.test(userRole(user))
+  return /^super\s*user$/i.test(userRole(user)) || Number(user?.role_id) === 1
+}
+
+function isManager(user) {
+  const role = userRole(user)
+  return isSuperUser(user) || /^administrador$/i.test(role) || /^admin$/i.test(role) || Number(user?.role_id) === 2
 }
 
 function isActive(user) {
@@ -27,12 +50,14 @@ function isActive(user) {
 }
 
 export function AdminUsers() {
-  const { token } = useOutletContext()
+  const { token, profile } = useOutletContext()
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyUser)
   const [editingId, setEditingId] = useState(null)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const viewerIsManager = isManager(profile)
+  const viewerIsSuper = isSuperUser(profile)
 
   async function loadUsers() {
     const res = await api('/users', { token })
@@ -56,7 +81,6 @@ export function AdminUsers() {
   }
 
   function openEdit(user) {
-    const role = userRole(user)
     setEditingId(user.id)
     setForm({
       full_name: user.full_name || '',
@@ -64,7 +88,7 @@ export function AdminUsers() {
       password: '',
       password_confirmation: '',
       phone: user.phone || '',
-      role_id: isSuperUser(user) || /^admin$/i.test(role) ? 1 : 2,
+      role_id: roleIdFromName(userRole(user)),
     })
     setOpen(true)
   }
@@ -77,18 +101,20 @@ export function AdminUsers() {
     }
     setSaving(true)
     try {
-      const current = users.find((row) => row.id === editingId)
+      const roleName = roleNameFromId(form.role_id)
       if (editingId) {
-        const body = {
-          first_name: form.full_name,
-          last_name: '',
-          email: form.email,
-          phone: form.phone,
-        }
-        if (!isSuperUser(current)) {
-          body.role = Number(form.role_id) === 1 ? 'admin' : 'user'
-        }
-        await api(`/users/${editingId}`, { token, method: 'PUT', body })
+        await api(`/users/${editingId}`, {
+          token,
+          method: 'PUT',
+          body: {
+            first_name: form.full_name,
+            last_name: '',
+            email: form.email,
+            phone: form.phone,
+            role: roleName,
+            role_id: Number(form.role_id),
+          },
+        })
       } else {
         await api('/users', {
           token,
@@ -100,12 +126,17 @@ export function AdminUsers() {
             password_confirmation: form.password_confirmation,
             phone: form.phone,
             role_id: Number(form.role_id),
+            role: roleName,
           },
         })
       }
       close()
       await loadUsers()
-      await notifySuccess(editingId ? 'Usuario actualizado' : 'Usuario creado')
+      const verifyUrl = `${window.location.origin}/verificar`
+      await notifySuccess(
+        editingId ? 'Usuario actualizado' : 'Usuario creado',
+        editingId ? '' : `Se envió el correo de verificación. El usuario debe entrar a ${verifyUrl} con su código.`,
+      )
     } catch (err) {
       await notifyError('No se pudo guardar', err.message)
     } finally {
@@ -113,15 +144,18 @@ export function AdminUsers() {
     }
   }
 
-  async function removeUser(id) {
-    const current = users.find((row) => row.id === id)
-    if (isSuperUser(current)) {
-      await notifyError('Un Superuser no se puede eliminar')
-      return
-    }
+  function canDelete(target) {
+    if (!viewerIsManager) return false
+    if (profile?.id && target.id === profile.id) return false
+    if (isSuperUser(target) && !viewerIsSuper) return false
+    return true
+  }
+
+  async function removeUser(user) {
+    if (!canDelete(user)) return
     if (!(await confirmAction('¿Eliminar este usuario?'))) return
     try {
-      await api(`/users/${id}`, { token, method: 'DELETE' })
+      await api(`/users/${user.id}`, { token, method: 'DELETE' })
       await loadUsers()
       await notifySuccess('Usuario eliminado')
     } catch (err) {
@@ -129,17 +163,14 @@ export function AdminUsers() {
     }
   }
 
-  async function verifyUser(user) {
-    if (isSuperUser(user)) {
-      await notifyError('Un Superuser no se puede verificar')
-      return
-    }
+  async function toggleUser(user) {
+    if (!viewerIsManager) return
     try {
       await api(`/users/${user.id}/toggle-access`, { token, method: 'PUT' })
       await loadUsers()
-      await notifySuccess('Usuario verificado')
+      await notifySuccess(isActive(user) ? 'Usuario desactivado' : 'Usuario activado')
     } catch (err) {
-      await notifyError('No se pudo verificar', err.message)
+      await notifyError('No se pudo actualizar', err.message)
     }
   }
 
@@ -176,16 +207,16 @@ export function AdminUsers() {
                   <button type="button" onClick={() => openEdit(user)}>
                     Editar
                   </button>
-                  {isSuperUser(user) ? null : (
-                    <button type="button" onClick={() => verifyUser(user)}>
-                      Verificar
+                  {viewerIsManager ? (
+                    <button type="button" onClick={() => toggleUser(user)}>
+                      {isActive(user) ? 'Desactivar' : 'Activar'}
                     </button>
-                  )}
-                  {isSuperUser(user) ? null : (
-                    <button type="button" onClick={() => removeUser(user.id)}>
+                  ) : null}
+                  {canDelete(user) ? (
+                    <button type="button" onClick={() => removeUser(user)}>
                       Eliminar
                     </button>
-                  )}
+                  ) : null}
                 </>
               ),
             },
@@ -216,14 +247,13 @@ export function AdminUsers() {
             </label>
             <label>
               Rol
-              {editingId && isSuperUser(users.find((row) => row.id === editingId)) ? (
-                <input value="Superuser" disabled />
-              ) : (
-                <select value={form.role_id} onChange={(e) => setForm({ ...form, role_id: Number(e.target.value) })}>
-                  <option value={2}>Usuario</option>
-                  <option value={1}>Admin</option>
-                </select>
-              )}
+              <select value={form.role_id} onChange={(e) => setForm({ ...form, role_id: Number(e.target.value) })}>
+                {STAFF_ROLES.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
             </label>
             {editingId ? null : (
               <>

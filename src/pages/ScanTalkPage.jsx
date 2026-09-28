@@ -90,6 +90,15 @@ export function ScanTalkPage({ token }) {
     }
   }
 
+  function clearStudent() {
+    setAccepted(false)
+    setProfile(null)
+    setHistory([])
+    setTalkId('')
+    setCode('')
+    setError('')
+  }
+
   const historyTalks = talks.filter((talk) => assignedIds.has(talk.id))
 
   return (
@@ -159,7 +168,7 @@ export function ScanTalkPage({ token }) {
           </button>
         </>
       ) : null}
-      <CheckInModal open={accepted} onClose={() => setAccepted(false)} />
+      <CheckInModal open={accepted} onClose={clearStudent} />
     </section>
   )
 }

@@ -22,7 +22,7 @@ export function StudentCredential({ student }) {
     <article className="id-card">
       <header className="id-card-band">
         <span>MOSTLA DAY 2026</span>
-        <em>ESTUDIANTE</em>
+        <em>{Number(student.points ?? 0)} pts</em>
       </header>
       <div className="id-card-body">
         <div className="id-card-photo">
@@ -34,6 +34,9 @@ export function StudentCredential({ student }) {
           <p className="id-card-nfc">
             <Nfc size={14} />
             {card}
+          </p>
+          <p className="id-card-stats">
+            Puntos <b>{student.points ?? 0}</b>
           </p>
         </div>
       </div>

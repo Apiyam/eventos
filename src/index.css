@@ -2300,11 +2300,26 @@ input {
 
 .id-card-band em {
   font-style: normal;
-  background: #e4eaf3;
-  color: #163a5f;
+  background: #163a5f;
+  color: #fff;
   padding: 3px 8px;
   border-radius: 999px;
   letter-spacing: 0.08em;
+}
+
+.id-card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #5c6570;
+}
+
+.id-card-stats b {
+  color: #163a5f;
+  font-size: 16px;
 }
 
 .id-card.is-staff .id-card-band em {
@@ -2369,20 +2384,6 @@ input {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 12px;
   letter-spacing: 0.04em;
-}
-
-.id-card-stats {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 12px;
-  color: #5c6570;
-}
-
-.id-card-stats b {
-  color: #163a5f;
-  font-size: 14px;
 }
 
 .staff-history {

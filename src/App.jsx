@@ -4,6 +4,7 @@ import { EventHome } from './components/EventHome'
 import { useAdminSession, useStudent } from './hooks/useStudent'
 import { AdminLogin } from './pages/AdminLogin'
 import { StudentPassPage } from './pages/StudentPassPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
 const NfcCheckinPage = lazy(() => import('./pages/NfcCheckinPage').then((m) => ({ default: m.NfcCheckinPage })))
 const RafflePage = lazy(() => import('./pages/RafflePage').then((m) => ({ default: m.RafflePage })))
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/nfc" element={<NfcCheckinPage />} />
           <Route path="/marcador" element={<Scoreboard />} />
           <Route path="/rifa" element={<RafflePage standalone />} />
+          <Route path="/verificar" element={<VerifyEmailPage />} />
           <Route path="/admin" element={<AdminRoot />}>
             <Route index element={<AdminHome />} />
             <Route path="ingreso" element={<AdminScan />} />

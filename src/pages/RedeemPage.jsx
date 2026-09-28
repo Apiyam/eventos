@@ -127,7 +127,12 @@ export function RedeemPage({ token }) {
                 <p>
                   {item.cost} pts · stock {item.quantity}
                 </p>
-                <button className="dash-cta" type="button" disabled={busy || Number(item.quantity) < 1} onClick={() => redeem(item)}>
+                <button
+                  className="dash-cta"
+                  type="button"
+                  disabled={busy || Number(item.quantity) < 1 || (!profile.staff && Number(profile.points || 0) < Number(item.cost || 0) * Math.max(1, Number(qty) || 1))}
+                  onClick={() => redeem(item)}
+                >
                   Canjear
                 </button>
               </article>
