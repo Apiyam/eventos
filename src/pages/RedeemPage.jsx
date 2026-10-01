@@ -136,18 +136,20 @@ export function RedeemPage({ token }) {
 
       {profile ? (
         <>
-          <label>
+          <label className="staff-qty">
             Cantidad
-            <input type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} />
+            <input type="number" min="1" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} />
           </label>
           <div className="staff-products">
             {store.map((item) => (
-              <article key={item.id} className="shop-card">
-                <Gift size={22} />
-                <h3>{item.product}</h3>
-                <p>
-                  {item.cost} pts · stock {item.quantity}
-                </p>
+              <article key={item.id} className="shop-card staff-product">
+                <Gift size={20} />
+                <div className="staff-product-copy">
+                  <h3>{item.product}</h3>
+                  <p>
+                    {item.cost} pts · stock {item.quantity}
+                  </p>
+                </div>
                 <button
                   className="dash-cta"
                   type="button"

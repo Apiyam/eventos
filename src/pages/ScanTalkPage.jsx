@@ -152,20 +152,22 @@ export function ScanTalkPage({ token }) {
             <p className="muted">Aún no tiene pláticas registradas.</p>
           )}
 
-          <label>
-            Plática
-            <select value={talkId} onChange={(e) => setTalkId(e.target.value)}>
-              <option value="">Selecciona una plática</option>
-              {available.map((talk) => (
-                <option key={talk.id} value={talk.id}>
-                  {talk.title} · {formatTime(talk.start)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="dash-cta" type="button" disabled={busy || !talkId} onClick={acceptTalk}>
-            Registrar entrada
-          </button>
+          <div className="staff-confirm">
+            <label>
+              Plática
+              <select value={talkId} onChange={(e) => setTalkId(e.target.value)}>
+                <option value="">Selecciona una plática</option>
+                {available.map((talk) => (
+                  <option key={talk.id} value={talk.id}>
+                    {talk.title} · {formatTime(talk.start)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="dash-cta" type="button" disabled={busy || !talkId} onClick={acceptTalk}>
+              Registrar entrada
+            </button>
+          </div>
         </>
       ) : null}
       <CheckInModal open={accepted} onClose={clearStudent} />

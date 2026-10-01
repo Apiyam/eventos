@@ -95,47 +95,53 @@ export function FilterableTable({ columns, rows, rowKey, rowClassName, emptyText
         </label>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => {
-              const active = sortKey === column.key
-              const sortable = column.sortable !== false
-              return (
-                <th key={column.key || column.label}>
-                  {sortable ? (
-                    <button type="button" className="dt-sort" onClick={() => toggleSort(column)}>
-                      <span>{column.label}</span>
-                      {active ? sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} /> : null}
-                    </button>
-                  ) : (
-                    column.label
-                  )}
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {visible.length ? (
-            visible.map((row, index) => (
-              <tr key={rowKey ? rowKey(row, index) : index} className={rowClassName ? rowClassName(row) : undefined}>
-                {columns.map((column) => (
-                  <td key={column.key || column.label} className={typeof column.className === 'function' ? column.className(row) : column.className}>
-                    {column.render ? column.render(row) : cellValue(column, row) || '—'}
-                  </td>
-                ))}
-              </tr>
-            ))
-          ) : (
+      <div className="dt-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={columns.length} className="dt-empty">
-                {query ? 'No se encontraron resultados.' : emptyText}
-              </td>
+              {columns.map((column) => {
+                const active = sortKey === column.key
+                const sortable = column.sortable !== false
+                return (
+                  <th key={column.key || column.label}>
+                    {sortable ? (
+                      <button type="button" className="dt-sort" onClick={() => toggleSort(column)}>
+                        <span>{column.label}</span>
+                        {active ? sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} /> : null}
+                      </button>
+                    ) : (
+                      column.label
+                    )}
+                  </th>
+                )
+              })}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {visible.length ? (
+              visible.map((row, index) => (
+                <tr key={rowKey ? rowKey(row, index) : index} className={rowClassName ? rowClassName(row) : undefined}>
+                  {columns.map((column) => (
+                    <td
+                      key={column.key || column.label}
+                      data-label={column.label || ''}
+                      className={typeof column.className === 'function' ? column.className(row) : column.className}
+                    >
+                      {column.render ? column.render(row) : cellValue(column, row) || '—'}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="dt-empty">
+                  {query ? 'No se encontraron resultados.' : emptyText}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="dt-foot">
         <p>

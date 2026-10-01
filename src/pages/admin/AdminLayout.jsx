@@ -21,7 +21,10 @@ export function AdminLayout({ token, profile, onLogout, updateProfile }) {
   const items = nav.filter((item) => canAccessAdminPath(profile, item.to))
 
   return (
-    <div className="dash">
+    <div className={`dash${menuOpen ? ' is-nav-open' : ''}`}>
+      {menuOpen ? (
+        <button type="button" className="dash-scrim" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />
+      ) : null}
       <aside className={`dash-side ${menuOpen ? 'is-open' : ''}`}>
         <div className="dash-avatar" aria-hidden="true">
           <Users size={36} />
