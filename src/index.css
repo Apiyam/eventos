@@ -1765,17 +1765,18 @@ input {
 
 .dash-copy-url {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
+  max-width: 280px;
 }
 
 .dash-copy-url .dash-mono {
   min-width: 0;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #163a5f;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .dash-table-wrap .dash-copy-btn {
@@ -1897,9 +1898,8 @@ input {
     display: none;
   }
 
-  .dash-copy-url .dash-mono {
+  .dash-copy-url {
     max-width: none;
-    white-space: normal;
   }
 }
 

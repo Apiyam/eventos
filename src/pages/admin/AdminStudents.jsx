@@ -117,7 +117,9 @@ export function AdminStudents() {
                 if (!url) return '—'
                 return (
                   <div className="dash-copy-url">
-                    <span className="dash-mono">{url}</span>
+                    <a className="dash-mono" href={url} target="_blank" rel="noopener noreferrer">
+                      {url}
+                    </a>
                     <button
                       type="button"
                       className="dash-copy-btn"
