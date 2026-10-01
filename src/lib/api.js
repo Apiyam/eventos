@@ -113,7 +113,14 @@ export function unwrapToken(res) {
 }
 
 export function unwrapUser(res) {
-  return res?.user || res?.data?.user || unwrapRecord(res)
+  const user = res?.user || res?.data?.user || unwrapRecord(res)
+  if (!user || typeof user !== 'object') return user
+  return {
+    ...user,
+    must_change_password: Boolean(
+      user.must_change_password ?? res?.must_change_password ?? res?.data?.must_change_password,
+    ),
+  }
 }
 
 export function unwrapImagePath(res) {
@@ -180,26 +187,23 @@ export function extractStudentId(record) {
 }
 
 export function extractTalkIds(res) {
-  const lists = [
-    unwrapList(res),
-    Array.isArray(res?.talks) ? res.talks : [],
-    Array.isArray(res?.data?.talks) ? res.data.talks : [],
-    Array.isArray(res?.student_talks) ? res.student_talks : [],
-    Array.isArray(res?.data?.student_talks) ? res.data.student_talks : [],
-  ]
+  const rows = unwrapList(res)
   return [
     ...new Set(
-      lists.flatMap((rows) =>
-        rows.flatMap((row) => {
-          const ids = [row?.talk_id, row?.talk?.id]
-          if (row?.name || row?.speaker || row?.start_time || row?.title) ids.push(row.id)
-          return ids
-        }),
-      ),
+      rows
+        .flatMap((row) => [row?.talk_id, row?.talk?.id])
+        .filter((id) => id != null && id !== '')
+        .map(String),
     ),
   ]
-    .filter((id) => id != null && id !== '')
-    .map(String)
+}
+
+function rowBelongsToStudent(row, student) {
+  const enrollment = student?.enrollment_number
+  const studentId = extractStudentId(student)
+  if (enrollment && sameCode(row.enrollment_number || row.student?.enrollment_number, enrollment)) return true
+  if (studentId && Number(row.student_id || row.student?.id) === studentId) return true
+  return false
 }
 
 function studentPoints(row) {
@@ -287,29 +291,26 @@ export async function fetchEventStudents(eventId) {
 }
 
 export async function fetchStudentTalks(student) {
-  if (Array.isArray(student?.talks) && student.talks.length) {
-    return extractTalkIds({ data: student.talks })
-  }
-  const enrollment = student?.enrollment_number
-  const studentId = extractStudentId(student)
+  const nested = Array.isArray(student?.talks) ? student.talks.filter((row) => row?.talk_id || row?.talk) : []
+  if (nested.length) return extractTalkIds({ data: nested })
+
   try {
-    const rows = unwrapList(await api('/student-talks')).filter((row) => {
-      if (enrollment && sameCode(row.enrollment_number || row.student?.enrollment_number, enrollment)) return true
-      if (studentId && Number(row.student_id || row.student?.id) === studentId) return true
-      return false
-    })
-    if (rows.length) return extractTalkIds({ data: rows })
+    const rows = unwrapList(await api('/student-talks')).filter((row) => rowBelongsToStudent(row, student))
+    return extractTalkIds({ data: rows })
   } catch {
     /* try by id */
   }
+
+  const studentId = extractStudentId(student)
   if (studentId) {
     try {
-      return extractTalkIds(await api(`/student-talks/${studentId}`))
+      const rows = unwrapList(await api(`/student-talks/${studentId}`)).filter((row) => row?.talk_id || row?.talk)
+      return extractTalkIds({ data: rows })
     } catch {
-      /* keep listed talks */
+      /* empty */
     }
   }
-  return (student?.talk_ids || []).map(String)
+  return []
 }
 
 export async function loginStudentByEnrollment(enrollment) {

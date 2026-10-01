@@ -66,7 +66,7 @@ export function useStudent() {
       try {
         return await hydrate(enrollment_number)
       } catch {
-        setStudent(created)
+        setStudent({ ...created, talk_ids: [] })
         setStudentEnrollment(created.enrollment_number)
         return created
       }
@@ -144,6 +144,26 @@ export function useAdminSession() {
     return nextUser
   }, [])
 
+  const updateProfile = useCallback(
+    async (payload) => {
+      const id = profile?.id
+      if (!id) throw new Error('No hay usuario en sesión')
+      const res = await api(`/users/${id}`, { token, method: 'PUT', body: payload })
+      const nextUser = {
+        ...profile,
+        ...unwrapUser(res),
+        full_name: payload.full_name ?? profile.full_name,
+        email: payload.email ?? profile.email,
+        phone: payload.phone ?? profile.phone,
+        must_change_password: false,
+      }
+      setProfile(nextUser)
+      setAdminProfile(nextUser)
+      return nextUser
+    },
+    [profile, token],
+  )
+
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST', token }).catch(() => {})
     setAdminToken('')
@@ -152,5 +172,5 @@ export function useAdminSession() {
     setProfile(null)
   }, [token])
 
-  return { token, profile, ready, login, logout }
+  return { token, profile, ready, login, logout, updateProfile }
 }

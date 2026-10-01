@@ -1,6 +1,7 @@
-import { Bell, Folder, Gift, Home, LogOut, MapPin, Menu, MessageSquare, QrCode, Ticket, Users } from 'lucide-react'
+import { Bell, Folder, Gift, Home, LogOut, MapPin, Menu, MessageSquare, QrCode, Ticket, UserRound, Users } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { canAccessAdminPath } from '../../lib/roles'
 
 const nav = [
   { to: '/admin', label: 'Inicio', icon: Home, end: true },
@@ -11,11 +12,13 @@ const nav = [
   { to: '/admin/estudiantes', label: 'Estudiantes', icon: MessageSquare },
   { to: '/admin/usuarios', label: 'Usuarios', icon: Bell },
   { to: '/admin/tienda', label: 'Tienda', icon: MapPin },
+  { to: '/admin/perfil', label: 'Mi perfil', icon: UserRound },
 ]
 
-export function AdminLayout({ token, profile, onLogout }) {
+export function AdminLayout({ token, profile, onLogout, updateProfile }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const name = profile?.full_name || 'Administrador'
+  const items = nav.filter((item) => canAccessAdminPath(profile, item.to))
 
   return (
     <div className="dash">
@@ -26,7 +29,7 @@ export function AdminLayout({ token, profile, onLogout }) {
         <h1>{name}</h1>
         <p>{profile?.email}</p>
         <nav>
-          {nav.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon
             return (
               <NavLink
@@ -53,7 +56,7 @@ export function AdminLayout({ token, profile, onLogout }) {
             <Menu size={22} />
           </button>
         </header>
-        <Outlet context={{ token, profile }} />
+        <Outlet context={{ token, profile, updateProfile }} />
       </main>
     </div>
   )

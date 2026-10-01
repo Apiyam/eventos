@@ -21,7 +21,10 @@ export function VerifyEmailPage() {
           code: String(code || '').trim(),
         },
       })
-      await notifySuccess('Cuenta verificada', 'Ya puedes iniciar sesión.')
+      await notifySuccess(
+        'Cuenta verificada',
+        'Se envió un correo con una nueva contraseña, recuerda cambiarla al iniciar sesión.',
+      )
       navigate('/admin')
     } catch (err) {
       await notifyError('No se pudo verificar', err.message)

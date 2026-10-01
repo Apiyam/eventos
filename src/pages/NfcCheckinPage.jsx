@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { CheckInModal } from '../components/CheckInModal'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
+import { useAdminSession } from '../hooks/useStudent'
 import { useCodeScanner } from '../hooks/useCodeScanner'
 import {
   asStudentProfile,
@@ -13,10 +14,13 @@ import {
   registerTalkAttendance,
 } from '../lib/api'
 import { findStudentByCode, findTalkByCode, normalizeScanCode } from '../lib/nfc'
+import { roleKey } from '../lib/roles'
 import { formatTime } from '../lib/time'
 
 export function NfcCheckinPage() {
   const { code: routeCode } = useParams()
+  const navigate = useNavigate()
+  const { profile: staff, ready: staffReady } = useAdminSession()
   const initialCode = normalizeScanCode(routeCode || '')
   const [students, setStudents] = useState([])
   const [talks, setTalks] = useState([])
@@ -28,6 +32,13 @@ export function NfcCheckinPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [accepted, setAccepted] = useState(false)
+
+  useEffect(() => {
+    if (!staffReady || !staff || !initialCode) return
+    if (roleKey(staff) === 'tienda') {
+      navigate(`/admin/canje?code=${encodeURIComponent(initialCode)}`, { replace: true })
+    }
+  }, [initialCode, navigate, staff, staffReady])
 
   useEffect(() => {
     let cancelled = false
@@ -91,7 +102,7 @@ export function NfcCheckinPage() {
     openStudent(needle, list)
   }
 
-  const { videoRef, scanning, scanError, scanHint, startCamera, startNfc, canDetectQr } = useCodeScanner((next) => {
+  const { videoRef, scanning, scanError, scanHint, startCamera, stopCamera, startNfc } = useCodeScanner((next) => {
     setCode(next)
     const talk = findTalkByCode(talks, next)
     if (talk && !profile) {
@@ -154,8 +165,8 @@ export function NfcCheckinPage() {
         <StaffScanBar
           videoRef={videoRef}
           scanning={scanning}
-          canDetectQr={canDetectQr}
           onScanQr={startCamera}
+          onStopQr={stopCamera}
           onScanNfc={startNfc}
         />
         <form

@@ -25,7 +25,7 @@ function PassList({ items, empty, loaded }) {
 
 export function StudentPassPage({ student, onCheckout }) {
   const [talks, setTalks] = useState([])
-  const [mineIds, setMineIds] = useState(() => (student.talk_ids || []).map(String))
+  const [mineIds, setMineIds] = useState([])
   const [agendaOpen, setAgendaOpen] = useState(false)
   const [mineOpen, setMineOpen] = useState(false)
   const [storeOpen, setStoreOpen] = useState(false)
@@ -63,7 +63,7 @@ export function StudentPassPage({ student, onCheckout }) {
         if (!cancelled) setMineIds(ids.map(String))
       })
       .catch(() => {
-        if (!cancelled) setMineIds((student.talk_ids || []).map(String))
+        if (!cancelled) setMineIds([])
       })
       .finally(() => {
         if (!cancelled) setMineLoaded(true)

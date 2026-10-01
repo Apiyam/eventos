@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 export function AdminLogin({ onLogin }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -14,7 +15,8 @@ export function AdminLogin({ onLogin }) {
     setError('')
     try {
       await onLogin(email, password)
-      navigate('/admin')
+      const next = `${location.pathname}${location.search}`
+      navigate(next.startsWith('/admin') ? next : '/admin', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

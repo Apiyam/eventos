@@ -107,8 +107,7 @@ export function AdminUsers() {
           token,
           method: 'PUT',
           body: {
-            first_name: form.full_name,
-            last_name: '',
+            full_name: form.full_name,
             email: form.email,
             phone: form.phone,
             role: roleName,

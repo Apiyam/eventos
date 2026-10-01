@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import jsQR from 'jsqr'
 import { normalizeScanCode } from '../lib/nfc'
 
 export function useCodeScanner(onCode) {
   const videoRef = useRef(null)
   const streamRef = useRef(null)
+  const frameRef = useRef(0)
   const onCodeRef = useRef(onCode)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
@@ -12,6 +14,7 @@ export function useCodeScanner(onCode) {
   onCodeRef.current = onCode
 
   function stopCamera() {
+    cancelAnimationFrame(frameRef.current)
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
     setScanning(false)
@@ -30,38 +33,57 @@ export function useCodeScanner(onCode) {
     setScanHint('')
     stopCamera()
     if (!navigator.mediaDevices?.getUserMedia) {
-      setScanError('Este celular no permite cámara. Escribe el NFC.')
+      setScanError('Este celular no permite cámara. Escribe el NFC o la matrícula.')
       return
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
       })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        videoRef.current.setAttribute('playsinline', 'true')
         await videoRef.current.play()
       }
       setScanning(true)
-      if ('BarcodeDetector' in window) {
-        const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-        const tick = async () => {
-          if (!videoRef.current || !streamRef.current) return
-          try {
-            const codes = await detector.detect(videoRef.current)
+      setScanHint('Apunta la cámara al QR del estudiante.')
+
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      const detector = 'BarcodeDetector' in window ? new window.BarcodeDetector({ formats: ['qr_code'] }) : null
+
+      const tick = async () => {
+        const video = videoRef.current
+        if (!video || !streamRef.current || video.readyState < 2) {
+          frameRef.current = requestAnimationFrame(tick)
+          return
+        }
+        try {
+          if (detector) {
+            const codes = await detector.detect(video)
             if (codes[0]?.rawValue) {
               emitCode(codes[0].rawValue)
               return
             }
-          } catch {
-            /* keep scanning */
           }
-          requestAnimationFrame(tick)
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+          ctx.drawImage(video, 0, 0)
+          const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const found = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
+          if (found?.data) {
+            emitCode(found.data)
+            return
+          }
+        } catch {
+          /* keep scanning */
         }
-        requestAnimationFrame(tick)
+        frameRef.current = requestAnimationFrame(tick)
       }
+      frameRef.current = requestAnimationFrame(tick)
     } catch (err) {
-      setScanError(err.message || 'No se pudo abrir la cámara')
+      setScanError(err.message || 'No se pudo abrir la cámara. Revisa el permiso y que el sitio esté en HTTPS.')
     }
   }
 
@@ -94,7 +116,8 @@ export function useCodeScanner(onCode) {
     scanError,
     scanHint,
     startCamera,
+    stopCamera,
     startNfc,
-    canDetectQr: typeof window !== 'undefined' && 'BarcodeDetector' in window,
+    canDetectQr: true,
   }
 }

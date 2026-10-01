@@ -1,8 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { EventHome } from './components/EventHome'
 import { useAdminSession, useStudent } from './hooks/useStudent'
+import { canAccessAdminPath } from './lib/roles'
 import { AdminLogin } from './pages/AdminLogin'
+import { ForcePasswordModal } from './pages/admin/ForcePasswordModal'
 import { StudentPassPage } from './pages/StudentPassPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
@@ -18,6 +20,7 @@ const AdminStore = lazy(() => import('./pages/admin/AdminStore').then((m) => ({ 
 const AdminScan = lazy(() => import('./pages/admin/AdminOutletPage').then((m) => ({ default: m.AdminScan })))
 const AdminRedeem = lazy(() => import('./pages/admin/AdminOutletPage').then((m) => ({ default: m.AdminRedeem })))
 const AdminRaffle = lazy(() => import('./pages/admin/AdminOutletPage').then((m) => ({ default: m.AdminRaffle })))
+const AdminProfile = lazy(() => import('./pages/admin/AdminProfile').then((m) => ({ default: m.AdminProfile })))
 
 function Fallback() {
   return <div className="clerk-screen" />
@@ -43,6 +46,7 @@ export default function App() {
             <Route path="asistentes" element={<Navigate to="/admin/estudiantes" replace />} />
             <Route path="usuarios" element={<AdminUsers />} />
             <Route path="tienda" element={<AdminStore />} />
+            <Route path="perfil" element={<AdminProfile />} />
           </Route>
           <Route path="/*" element={<StudentRoot />} />
         </Routes>
@@ -52,10 +56,17 @@ export default function App() {
 }
 
 function AdminRoot() {
-  const { token, profile, ready, login, logout } = useAdminSession()
+  const { token, profile, ready, login, logout, updateProfile } = useAdminSession()
+  const location = useLocation()
   if (!ready) return <Fallback />
   if (!profile) return <AdminLogin onLogin={login} />
-  return <AdminLayout token={token} profile={profile} onLogout={logout} />
+  if (!canAccessAdminPath(profile, location.pathname)) return <Navigate to="/admin" replace />
+  return (
+    <>
+      {profile.must_change_password ? <ForcePasswordModal profile={profile} onSave={updateProfile} /> : null}
+      <AdminLayout token={token} profile={profile} onLogout={logout} updateProfile={updateProfile} />
+    </>
+  )
 }
 
 function StudentRoot() {

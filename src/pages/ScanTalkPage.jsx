@@ -61,7 +61,7 @@ export function ScanTalkPage({ token }) {
     }
   }
 
-  const { videoRef, scanning, scanError, scanHint, startCamera, startNfc, canDetectQr } = useCodeScanner((next) => {
+  const { videoRef, scanning, scanError, scanHint, startCamera, stopCamera, startNfc } = useCodeScanner((next) => {
     setCode(next)
     openProfile(next)
   })
@@ -108,8 +108,8 @@ export function ScanTalkPage({ token }) {
       <StaffScanBar
         videoRef={videoRef}
         scanning={scanning}
-        canDetectQr={canDetectQr}
         onScanQr={startCamera}
+        onStopQr={stopCamera}
         onScanNfc={startNfc}
       />
       <form

@@ -1,14 +1,17 @@
 import { Gift } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
 import { useCodeScanner } from '../hooks/useCodeScanner'
 import { notifyError, notifySuccess } from '../lib/alert'
 import { api, asStudentProfile, extractStudentId, fetchStoreList, fetchStudents } from '../lib/api'
-import { findStudentByCode } from '../lib/nfc'
+import { findStudentByCode, normalizeScanCode } from '../lib/nfc'
 
 export function RedeemPage({ token }) {
-  const [code, setCode] = useState('')
+  const [params] = useSearchParams()
+  const preset = normalizeScanCode(params.get('code') || params.get('nfc') || '')
+  const [code, setCode] = useState(preset)
   const [students, setStudents] = useState([])
   const [store, setStore] = useState([])
   const [profile, setProfile] = useState(null)
@@ -31,15 +34,33 @@ export function RedeemPage({ token }) {
     setProfile(found)
   }
 
-  const { videoRef, scanning, scanError, scanHint, startCamera, startNfc, canDetectQr } = useCodeScanner((next) => {
+  const { videoRef, scanning, scanError, scanHint, startCamera, stopCamera, startNfc } = useCodeScanner((next) => {
     setCode(next)
     lookup(next)
   })
 
   useEffect(() => {
-    fetchStudents(token, { force: true }).then(setStudents).catch((err) => notifyError('No se pudieron cargar los estudiantes', err.message))
-    fetchStoreList(token).then(setStore).catch(() => setStore([]))
-  }, [token])
+    let cancelled = false
+    fetchStudents(token, { force: true })
+      .then((list) => {
+        if (cancelled) return
+        setStudents(list)
+        if (preset) lookup(preset, list)
+      })
+      .catch((err) => {
+        if (!cancelled) notifyError('No se pudieron cargar los estudiantes', err.message)
+      })
+    fetchStoreList(token)
+      .then((list) => {
+        if (!cancelled) setStore(list)
+      })
+      .catch(() => {
+        if (!cancelled) setStore([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token, preset])
 
   async function redeem(product) {
     if (!profile) return
@@ -83,12 +104,12 @@ export function RedeemPage({ token }) {
   return (
     <section className="dash-card staff-panel">
       <h3>Canje de regalos</h3>
-      <p className="muted">Escanea el QR o NFC, o escribe el código.</p>
+      <p className="muted">En el celular pulsa Escanear QR, acepta la cámara y apunta al código del estudiante.</p>
       <StaffScanBar
         videoRef={videoRef}
         scanning={scanning}
-        canDetectQr={canDetectQr}
         onScanQr={startCamera}
+        onStopQr={stopCamera}
         onScanNfc={startNfc}
       />
       <form
