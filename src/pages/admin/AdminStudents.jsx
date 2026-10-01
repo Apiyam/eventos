@@ -1,9 +1,40 @@
-import { Plus, X } from 'lucide-react'
+import { Copy, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { FilterableTable } from '../../components/FilterableTable'
-import { notifyError, notifySuccess } from '../../lib/alert'
+import { notifyError, notifySuccess, notifyToast } from '../../lib/alert'
 import { createStudentRecord, fetchStudents } from '../../lib/api'
+import { publicNfcUrl } from '../../lib/nfc'
+
+function studentNfcCode(row) {
+  return String(row.card_number || row.nfc_id || row.enrollment_number || '').trim()
+}
+
+function studentNfcUrl(row) {
+  const code = studentNfcCode(row)
+  return code ? publicNfcUrl(code) : ''
+}
+
+async function copyNfcUrl(url) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url)
+    } else {
+      const field = document.createElement('textarea')
+      field.value = url
+      field.setAttribute('readonly', '')
+      field.style.position = 'fixed'
+      field.style.opacity = '0'
+      document.body.appendChild(field)
+      field.select()
+      document.execCommand('copy')
+      field.remove()
+    }
+    notifyToast('URL copiada')
+  } catch {
+    notifyError('No se pudo copiar')
+  }
+}
 
 const emptyStudent = {
   enrollment_number: '',
@@ -77,6 +108,29 @@ export function AdminStudents() {
               value: (row) => row.student_id || row.id,
             },
             { key: 'points', label: 'Puntos', type: 'number', value: (row) => Number(row.points || 0) },
+            {
+              key: 'nfc_url',
+              label: 'NFC URL',
+              value: (row) => studentNfcUrl(row),
+              render: (row) => {
+                const url = studentNfcUrl(row)
+                if (!url) return '—'
+                return (
+                  <div className="dash-copy-url">
+                    <span className="dash-mono">{url}</span>
+                    <button
+                      type="button"
+                      className="dash-copy-btn"
+                      onClick={() => copyNfcUrl(url)}
+                      aria-label="Copiar URL NFC"
+                      title="Copiar"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                )
+              },
+            },
           ]}
         />
       </section>

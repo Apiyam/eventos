@@ -1763,6 +1763,32 @@ input {
   overflow-wrap: anywhere;
 }
 
+.dash-copy-url {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dash-copy-url .dash-mono {
+  min-width: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-table-wrap .dash-copy-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
 @media (max-width: 719px) {
   body:has(.dash.is-nav-open) {
     overflow: hidden;
@@ -1869,6 +1895,11 @@ input {
 
   .dash-table-wrap .dt-empty::before {
     display: none;
+  }
+
+  .dash-copy-url .dash-mono {
+    max-width: none;
+    white-space: normal;
   }
 }
 
@@ -2983,6 +3014,12 @@ tr.is-winner td {
   width: min(420px, calc(100vw - 24px)) !important;
   border-radius: 20px !important;
   padding: 1.4rem 1.2rem !important;
+}
+
+.app-swal-toast {
+  font-size: 14px !important;
+  padding: 0.7rem 1rem !important;
+  border-radius: 12px !important;
 }
 
 .checkin-ok-icon {

@@ -29,6 +29,21 @@ export function notifyError(title, text = '') {
   })
 }
 
+export function notifyToast(title) {
+  return Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'success',
+    title,
+    showConfirmButton: false,
+    timer: 1800,
+    timerProgressBar: true,
+    customClass: {
+      popup: 'app-swal-toast',
+    },
+  })
+}
+
 export function confirmAction(title, text = 'Esta acción no se puede deshacer.') {
   return Swal.fire({
     icon: 'question',
