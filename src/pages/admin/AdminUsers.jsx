@@ -4,13 +4,7 @@ import { useOutletContext } from 'react-router-dom'
 import { FilterableTable } from '../../components/FilterableTable'
 import { confirmAction, notifyError, notifySuccess } from '../../lib/alert'
 import { api, unwrapList } from '../../lib/api'
-
-const STAFF_ROLES = [
-  { id: 1, name: 'Superuser' },
-  { id: 2, name: 'Administrador' },
-  { id: 3, name: 'Tienda' },
-  { id: 4, name: 'Platicas' },
-]
+import { STAFF_ROLES, isManager, isSuperUser, userRole } from '../../lib/roles'
 
 const emptyUser = {
   full_name: '',
@@ -19,10 +13,6 @@ const emptyUser = {
   password_confirmation: '',
   phone: '',
   role_id: 2,
-}
-
-function userRole(user) {
-  return String(user?.metadata?.role || user?.role || '').trim()
 }
 
 function roleIdFromName(name) {
@@ -34,15 +24,6 @@ function roleIdFromName(name) {
 
 function roleNameFromId(id) {
   return STAFF_ROLES.find((role) => role.id === Number(id))?.name || 'Administrador'
-}
-
-function isSuperUser(user) {
-  return /^super\s*user$/i.test(userRole(user)) || Number(user?.role_id) === 1
-}
-
-function isManager(user) {
-  const role = userRole(user)
-  return isSuperUser(user) || /^administrador$/i.test(role) || /^admin$/i.test(role) || Number(user?.role_id) === 2
 }
 
 function isActive(user) {
@@ -58,6 +39,8 @@ export function AdminUsers() {
   const [saving, setSaving] = useState(false)
   const viewerIsManager = isManager(profile)
   const viewerIsSuper = isSuperUser(profile)
+  const assignableRoles = viewerIsSuper ? STAFF_ROLES : STAFF_ROLES.filter((role) => role.id !== 1)
+  const visibleUsers = viewerIsSuper ? users : users.filter((user) => !isSuperUser(user))
 
   async function loadUsers() {
     const res = await api('/users', { token })
@@ -81,6 +64,8 @@ export function AdminUsers() {
   }
 
   function openEdit(user) {
+    if (isSuperUser(user) && !viewerIsSuper) return
+    const nextRoleId = roleIdFromName(userRole(user))
     setEditingId(user.id)
     setForm({
       full_name: user.full_name || '',
@@ -88,7 +73,7 @@ export function AdminUsers() {
       password: '',
       password_confirmation: '',
       phone: user.phone || '',
-      role_id: roleIdFromName(userRole(user)),
+      role_id: !viewerIsSuper && nextRoleId === 1 ? 2 : nextRoleId,
     })
     setOpen(true)
   }
@@ -99,9 +84,14 @@ export function AdminUsers() {
       notifyError('Las contraseñas no coinciden')
       return
     }
+    const roleId = !viewerIsSuper && Number(form.role_id) === 1 ? 2 : Number(form.role_id)
+    if (!viewerIsSuper && roleId === 1) {
+      notifyError('No puedes asignar el rol Superuser')
+      return
+    }
     setSaving(true)
     try {
-      const roleName = roleNameFromId(form.role_id)
+      const roleName = roleNameFromId(roleId)
       if (editingId) {
         await api(`/users/${editingId}`, {
           token,
@@ -111,7 +101,7 @@ export function AdminUsers() {
             email: form.email,
             phone: form.phone,
             role: roleName,
-            role_id: Number(form.role_id),
+            role_id: roleId,
           },
         })
       } else {
@@ -124,7 +114,7 @@ export function AdminUsers() {
             password: form.password,
             password_confirmation: form.password_confirmation,
             phone: form.phone,
-            role_id: Number(form.role_id),
+            role_id: roleId,
             role: roleName,
           },
         })
@@ -162,8 +152,14 @@ export function AdminUsers() {
     }
   }
 
+  function canManage(target) {
+    if (!viewerIsManager) return false
+    if (isSuperUser(target) && !viewerIsSuper) return false
+    return true
+  }
+
   async function toggleUser(user) {
-    if (!viewerIsManager) return
+    if (!canManage(user)) return
     try {
       await api(`/toggle-access/${user.id}`, { token, method: 'POST' })
       await loadUsers()
@@ -183,7 +179,7 @@ export function AdminUsers() {
           </button>
         </div>
         <FilterableTable
-          rows={users}
+          rows={visibleUsers}
           rowKey={(user) => user.id}
           emptyText="No hay usuarios."
           columns={[
@@ -203,10 +199,12 @@ export function AdminUsers() {
               className: 'dash-actions',
               render: (user) => (
                 <>
-                  <button type="button" onClick={() => openEdit(user)}>
-                    Editar
-                  </button>
-                  {viewerIsManager ? (
+                  {canManage(user) ? (
+                    <button type="button" onClick={() => openEdit(user)}>
+                      Editar
+                    </button>
+                  ) : null}
+                  {canManage(user) ? (
                     <button type="button" onClick={() => toggleUser(user)}>
                       {isActive(user) ? 'Desactivar' : 'Activar'}
                     </button>
@@ -247,7 +245,7 @@ export function AdminUsers() {
             <label>
               Rol
               <select value={form.role_id} onChange={(e) => setForm({ ...form, role_id: Number(e.target.value) })}>
-                {STAFF_ROLES.map((role) => (
+                {assignableRoles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
                   </option>
