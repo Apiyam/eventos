@@ -146,14 +146,14 @@ export function StudentPassPage({ student, onCheckout }) {
               </i>
               <span className="pass-acc-copy">
                 <strong>Agenda</strong>
-                <small>Todas las charlas del día</small>
+                <small>Todas las pláticas/talleres del día</small>
               </span>
               <ChevronDown size={18} />
             </button>
             {agendaOpen ? (
               <PassList
                 loaded={catalogLoaded}
-                empty="No hay charlas en la agenda."
+                empty="No hay pláticas/talleres en la agenda."
                 items={agenda.map((talk) => ({ id: talk.id, title: talk.title, meta: formatTime(talk.start) }))}
               />
             ) : null}
@@ -169,7 +169,7 @@ export function StudentPassPage({ student, onCheckout }) {
                 <Ticket size={18} />
               </i>
               <span className="pass-acc-copy">
-                <strong>Mis charlas</strong>
+                <strong>Mis pláticas/talleres</strong>
                 <small>Donde ya eres asistente</small>
               </span>
               <ChevronDown size={18} />
@@ -177,7 +177,7 @@ export function StudentPassPage({ student, onCheckout }) {
             {mineOpen ? (
               <PassList
                 loaded={mineLoaded && catalogLoaded}
-                empty="Aún no estás registrado en ninguna charla."
+                empty="Aún no estás registrado en ninguna plática o taller."
                 items={mine.map((talk) => ({ id: talk.id, title: talk.title, meta: formatTime(talk.start) }))}
               />
             ) : null}

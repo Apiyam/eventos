@@ -86,7 +86,7 @@ export function Scoreboard() {
           {chase.length ? <RankTable title="En disputa" rows={chase} start={5} /> : null}
         </div>
         <div className="board-col">
-          <p className="board-kicker">Próximas charlas</p>
+          <p className="board-kicker">Próximas pláticas/talleres</p>
           <div className="board-talks">
             {upcoming.map((talk) => {
               const live = talkStatus(talk, now) === 'live'

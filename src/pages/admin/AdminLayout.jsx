@@ -8,7 +8,7 @@ const nav = [
   { to: '/admin/ingreso', label: 'Ingreso', icon: QrCode },
   { to: '/admin/canje', label: 'Canje', icon: Gift },
   { to: '/admin/rifa', label: 'Rifa', icon: Ticket },
-  { to: '/admin/charlas', label: 'Charlas', icon: Folder },
+  { to: '/admin/charlas', label: 'Pláticas/talleres', icon: Folder },
   { to: '/admin/estudiantes', label: 'Estudiantes', icon: MessageSquare },
   { to: '/admin/usuarios', label: 'Usuarios', icon: Bell },
   { to: '/admin/tienda', label: 'Tienda', icon: MapPin },

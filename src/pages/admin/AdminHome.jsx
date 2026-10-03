@@ -107,7 +107,7 @@ export function AdminHome() {
 
         <article className="dash-card">
           <div className="dash-card-head">
-            <h3>Charlas</h3>
+            <h3>Pláticas/talleres</h3>
             <span>{talks.length} sesiones</span>
           </div>
           <TalkBars talks={talks} />
@@ -120,7 +120,7 @@ export function AdminHome() {
 function TalkBars({ talks }) {
   const rows = talks.slice(0, 8)
   const max = Math.max(1, ...rows.map((talk) => Number(talk.enrolled || 0)))
-  if (!rows.length) return <p className="muted">Sin charlas todavía.</p>
+  if (!rows.length) return <p className="muted">Sin pláticas/talleres todavía.</p>
   return (
     <div className="bars">
       {rows.map((talk, index) => (

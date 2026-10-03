@@ -39,7 +39,7 @@ export function AdminTalks() {
   }
 
   useEffect(() => {
-    loadTalks().catch((err) => notifyError('No se pudieron cargar las charlas', err.message))
+    loadTalks().catch((err) => notifyError('No se pudieron cargar las pláticas/talleres', err.message))
   }, [token])
 
   function closeTalkModal() {
@@ -127,15 +127,15 @@ export function AdminTalks() {
     <>
       <section className="dash-card dash-table-wrap">
         <div className="dash-card-head">
-          <h3>Charlas</h3>
+          <h3>Pláticas/talleres</h3>
           <button type="button" className="dash-cta" onClick={openCreateTalk}>
-            <Plus size={16} /> Añadir charla
+            <Plus size={16} /> Añadir plática/taller
           </button>
         </div>
         <FilterableTable
           rows={talks}
           rowKey={(talk) => talk.id}
-          emptyText="No hay charlas."
+          emptyText="No hay pláticas/talleres."
           columns={[
             { key: 'name', label: 'Nombre' },
             {
