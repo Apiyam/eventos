@@ -13,7 +13,7 @@ export function AdminHome() {
   useEffect(() => {
     let cancelled = false
     setBusy(true)
-    Promise.all([fetchStudents(token, { force: true }), fetchTalks(token)])
+    Promise.all([fetchStudents(token), fetchTalks(token)])
       .then(([nextStudents, nextTalks]) => {
         if (cancelled) return
         setStudents(nextStudents)

@@ -1,4 +1,4 @@
-import { api, asStudentProfile, fetchTalks, imageUrl, unwrapList } from '../lib/api'
+import { fetchStudents, fetchTalks, imageUrl } from '../lib/api'
 import { formatTime, parseTalkDate, talkStatus } from '../lib/time'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -36,8 +36,8 @@ export function Scoreboard() {
   }, [])
 
   useEffect(() => {
-    api('/students')
-      .then((res) => setUsers(unwrapList(res).map(asStudentProfile)))
+    fetchStudents()
+      .then(setUsers)
       .catch((err) => setError(err.message))
     fetchTalks()
       .then(setTalks)

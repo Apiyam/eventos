@@ -41,7 +41,7 @@ export function RedeemPage({ token }) {
 
   useEffect(() => {
     let cancelled = false
-    fetchStudents(token, { force: true })
+    fetchStudents(token)
       .then((list) => {
         if (cancelled) return
         setStudents(list)

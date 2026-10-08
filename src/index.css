@@ -2017,6 +2017,7 @@ input {
 
 .mostla-hero,
 .mostla-banner,
+.mostla-agenda,
 .mostla-foot {
   width: 100%;
 }
@@ -2087,6 +2088,20 @@ input {
   right: 24px;
   bottom: 8px;
   transform: rotate(12deg);
+}
+
+.mostla-agenda {
+  margin: 0;
+  background: #0b2a5a;
+  line-height: 0;
+}
+
+.mostla-agenda img {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
 }
 
 .mostla-banner {

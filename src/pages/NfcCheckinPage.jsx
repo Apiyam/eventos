@@ -43,7 +43,7 @@ export function NfcCheckinPage() {
   useEffect(() => {
     let cancelled = false
     Promise.all([
-      fetchStudents(undefined, { force: true }).catch(() => []),
+      fetchStudents().catch(() => []),
       fetchTalks(),
     ])
       .then(([list, nextTalks]) => {

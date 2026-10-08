@@ -148,8 +148,14 @@ export function imageUrl(path) {
 
 const STUDENT_SESSION_KEY = 'eventos.student.enrollment'
 const STUDENTS_DIR_KEY = 'eventos.students.dir'
+const LIST_TTL_MS = 60_000
 let directory = []
+let directoryAt = 0
 let directoryJob = null
+let talksCache = []
+let talksAt = 0
+let talksJob = null
+const getJobs = new Map()
 
 export function getStudentEnrollment() {
   try {
@@ -255,11 +261,13 @@ export function findStudentByEnrollment(students, enrollment) {
 }
 
 export async function fetchStudents(token, { force = false } = {}) {
-  if (!force && directory.length) return directory
-  if (!force && directoryJob) return directoryJob
+  const fresh = directory.length && Date.now() - directoryAt < LIST_TTL_MS
+  if (!force && fresh) return directory
+  if (directoryJob) return directoryJob
   directoryJob = (async () => {
     const rows = unwrapList(await api('/students', { token }))
     directory = rows.map(asStudentProfile).filter(Boolean)
+    directoryAt = Date.now()
     writeStudentsDirectory(directory)
     return directory
   })().finally(() => {
@@ -268,8 +276,18 @@ export async function fetchStudents(token, { force = false } = {}) {
   return directoryJob
 }
 
-export async function fetchTalks(token) {
-  return unwrapList(await api('/talks', { token })).map(mapTalk)
+export async function fetchTalks(token, { force = false } = {}) {
+  const fresh = talksCache.length && Date.now() - talksAt < LIST_TTL_MS
+  if (!force && fresh) return talksCache
+  if (talksJob) return talksJob
+  talksJob = (async () => {
+    talksCache = unwrapList(await api('/talks', { token })).map(mapTalk)
+    talksAt = Date.now()
+    return talksCache
+  })().finally(() => {
+    talksJob = null
+  })
+  return talksJob
 }
 
 export async function fetchEventStudents(eventId) {
@@ -294,13 +312,6 @@ export async function fetchStudentTalks(student) {
   const nested = Array.isArray(student?.talks) ? student.talks.filter((row) => row?.talk_id || row?.talk) : []
   if (nested.length) return extractTalkIds({ data: nested })
 
-  try {
-    const rows = unwrapList(await api('/student-talks')).filter((row) => rowBelongsToStudent(row, student))
-    return extractTalkIds({ data: rows })
-  } catch {
-    /* try by id */
-  }
-
   const studentId = extractStudentId(student)
   if (studentId) {
     try {
@@ -316,7 +327,7 @@ export async function fetchStudentTalks(student) {
 export async function loginStudentByEnrollment(enrollment) {
   const needle = String(enrollment || '').trim()
   if (!needle) throw new Error('Escribe tu matrícula')
-  const list = await fetchStudents(undefined, { force: true })
+  const list = await fetchStudents()
   const found = findStudentByEnrollment(list, needle)
   if (!found) throw new Error('Matrícula no registrada')
   const talk_ids = await fetchStudentTalks(found)
@@ -349,12 +360,22 @@ export function api(path, { token, method = 'GET', body, form } = {}) {
   const xsrf = readXsrfToken()
   if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
   if (!form) headers['Content-Type'] = 'application/json'
-  return fetch(`${API}${path}`, {
-    method,
-    credentials: 'include',
-    headers,
-    body: form ? body : body ? JSON.stringify(body) : undefined,
-  }).then(parse)
+  const send = () =>
+    fetch(`${API}${path}`, {
+      method,
+      credentials: 'include',
+      headers,
+      body: form ? body : body ? JSON.stringify(body) : undefined,
+    }).then(parse)
+
+  if (method === 'GET' && !form) {
+    const key = `${path}|${authToken}`
+    if (getJobs.has(key)) return getJobs.get(key)
+    const job = send().finally(() => getJobs.delete(key))
+    getJobs.set(key, job)
+    return job
+  }
+  return send()
 }
 
 export async function fetchStoreList(token) {

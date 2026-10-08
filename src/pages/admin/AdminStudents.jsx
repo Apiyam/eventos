@@ -48,13 +48,18 @@ export function AdminStudents() {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  async function loadStudents() {
-    const list = await fetchStudents(token, { force: true })
+  async function loadStudents({ force = false } = {}) {
+    const list = await fetchStudents(token, { force })
     setStudents(list)
   }
 
   useEffect(() => {
-    loadStudents().catch((err) => notifyError('No se pudieron cargar los estudiantes, por favor intente d enuevo más tarde o contacte al administrador.', err.message))
+    loadStudents().catch((err) =>
+      notifyError(
+        'No se pudieron cargar los estudiantes, por favor intente de nuevo más tarde o contacte al administrador.',
+        err.message,
+      ),
+    )
   }, [token])
 
   async function saveStudent(event) {
@@ -64,7 +69,7 @@ export function AdminStudents() {
       await createStudentRecord(form, token)
       setForm(emptyStudent)
       setOpen(false)
-      await loadStudents()
+      await loadStudents({ force: true })
       await notifySuccess('Estudiante creado')
     } catch (err) {
       await notifyError('No se pudo crear', err.message)

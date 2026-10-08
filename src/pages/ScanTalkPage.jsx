@@ -26,7 +26,7 @@ export function ScanTalkPage({ token }) {
   const [accepted, setAccepted] = useState(false)
 
   useEffect(() => {
-    fetchStudents(token, { force: true }).then(setStudents).catch((err) => setError(err.message))
+    fetchStudents(token).then(setStudents).catch((err) => setError(err.message))
     fetchTalks()
       .then(setTalks)
       .catch((err) => setError(err.message))
