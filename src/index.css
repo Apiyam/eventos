@@ -2106,19 +2106,21 @@ input {
 
 .mostla-banner {
   margin: 0;
+  background: #0b2a5a;
 }
 
 .mostla-banner img {
   width: 100%;
-  height: min(420px, 36vw);
-  min-height: 200px;
-  object-fit: cover;
+  height: auto;
+  max-height: min(520px, 70vw);
+  object-fit: contain;
   object-position: center;
   display: block;
+  margin: 0 auto;
 }
 
 .mostla-login {
-  padding: 48px 0 40px;
+  padding: 28px 0 36px;
   text-align: center;
 }
 

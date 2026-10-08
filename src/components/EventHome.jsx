@@ -31,34 +31,8 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
 
   return (
     <main className="mostla">
-      <section className="mostla-hero">
-        <img src="/landing/mostla-header.png" alt="MOSTLA DAY 2026. 13 de octubre | 10:00 - 15:00 hrs" />
-      </section>
-
-      <section className="mostla-intro">
-        <div className="mostla-wrap">
-          <span className="plane plane-left" aria-hidden="true" />
-          <p>
-            Ven a <strong>MOSTLA DAY</strong> y descubre las tecnologías
-            <br />
-            del presente para cambiar el futuro.
-            <br />
-            De la inteligencia artificial a la realidad extendida,
-            <br />
-            explora nuevas formas de aprender, enseñar
-            <br />
-            y <strong>hacer realidad tus ideas.</strong>
-          </p>
-          <span className="plane plane-right" aria-hidden="true" />
-        </div>
-      </section>
-
-      <figure className="mostla-agenda">
-        <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre: Pabellón, Jardinera, MOSTLA, Zona XR y Biblioteca" />
-      </figure>
-
       <figure className="mostla-banner">
-        <img src="/landing/mostla-banner.jpg" alt="Tecnologías MOSTLA DAY" />
+        <img src="/landing/mostla-banner.jpg" alt="MOSTLA DAY. Robot y tecnologías del evento" />
       </figure>
 
       <section className="mostla-login">
@@ -107,6 +81,10 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
           </form>
         </div>
       </section>
+
+      <figure className="mostla-agenda">
+        <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre: Pabellón, Jardinera, MOSTLA, Zona XR y Biblioteca" />
+      </figure>
 
       <footer className="mostla-foot">
         <p>Esta página tiene como único propósito acompañar las actividades de MOSTLA DAY.</p>
