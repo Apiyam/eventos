@@ -77,8 +77,13 @@ export function ScanTalkPage({ token }) {
     setError('')
     try {
       await registerTalkAttendance(profile, talk?.rawId || talkId)
-      const ids = await loadHistory(profile).catch(() => [...assignedIds, String(talkId)])
-      const next = asStudentProfile({ ...profile, talk_ids: ids })
+      const ids = [...assignedIds, String(talkId)]
+      const next = asStudentProfile({
+        ...profile,
+        talk_ids: ids,
+        talks: [...(profile.talks || []), { id: talk?.rawId || talkId, name: talk?.title }],
+      })
+      setHistory(ids)
       setProfile(next)
       setStudents((current) => current.map((row) => (row.student_id === next.student_id ? next : row)))
       setTalkId('')

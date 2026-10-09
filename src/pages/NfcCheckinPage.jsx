@@ -123,8 +123,14 @@ export function NfcCheckinPage() {
     setError('')
     try {
       await registerTalkAttendance(profile, selected.rawId || selected.id)
-      const ids = await loadHistory(profile).catch(() => [...assignedIds, String(selected.id)])
-      const next = asStudentProfile({ ...profile, talk_ids: ids })
+      const talkKey = String(selected.id)
+      const ids = [...assignedIds, talkKey]
+      const next = asStudentProfile({
+        ...profile,
+        talk_ids: ids,
+        talks: [...(profile.talks || []), { id: selected.rawId || selected.id, name: selected.title }],
+      })
+      setHistory(ids)
       setProfile(next)
       setStudents((current) =>
         current.map((row) => (row.student_id === next.student_id ? next : row)),

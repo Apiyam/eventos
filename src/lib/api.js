@@ -211,9 +211,15 @@ export function extractTalkIds(res) {
   ]
 }
 
+function talkIdFromNested(item) {
+  if (item == null) return ''
+  if (typeof item !== 'object') return String(item)
+  return String(item.talk_id || item.talk?.id || item.talk?.talk_id || item.id || '')
+}
+
 function enrolledTalkIds(row) {
-  if (Array.isArray(row?.talks) && row.talks.some(isTalkEnrollment)) {
-    return extractTalkIds({ data: row.talks.filter(isTalkEnrollment) })
+  if (Array.isArray(row?.talks) && row.talks.length) {
+    return [...new Set(row.talks.map(talkIdFromNested).filter(Boolean))]
   }
   if (Array.isArray(row?.talk_ids)) return row.talk_ids.map(String).filter(Boolean)
   return []
@@ -320,17 +326,7 @@ export async function fetchEventStudents(eventId) {
 }
 
 export async function fetchStudentTalks(student) {
-  const nested = Array.isArray(student?.talks) ? student.talks.filter(isTalkEnrollment) : []
-  if (nested.length) return extractTalkIds({ data: nested })
-
-  const studentId = extractStudentId(student)
-  if (!studentId) return []
-  try {
-    const rows = unwrapList(await api(`/student-talks/${studentId}`)).filter(isTalkEnrollment)
-    return extractTalkIds({ data: rows })
-  } catch {
-    return []
-  }
+  return enrolledTalkIds(student)
 }
 
 export async function loginStudentByEnrollment(enrollment) {
@@ -347,7 +343,17 @@ export function registerTalkAttendance(student, talkId) {
   const enrollment_number = student?.enrollment_number
   const student_id = extractStudentId(student)
   const body = enrollment_number ? { enrollment_number, talk_id } : { student_id, talk_id }
-  return api('/student-talks', { method: 'POST', body })
+  return api('/student-talks', { method: 'POST', body }).then((res) => {
+    const sid = extractStudentId(student)
+    directory = directory.map((row) => {
+      if (extractStudentId(row) !== sid) return row
+      const talks = [...(row.talks || []), { id: talk_id }]
+      return asStudentProfile({ ...row, talks })
+    })
+    directoryAt = Date.now()
+    writeStudentsDirectory(directory)
+    return res
+  })
 }
 
 export function createStudentRecord(payload, token) {
