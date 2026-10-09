@@ -2004,138 +2004,79 @@ input {
   width: 100%;
   max-width: none;
   margin: 0;
-  background: #fff;
+  background: #061428;
   color: #222;
 }
 
 .mostla-wrap {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
-.mostla-hero,
-.mostla-banner,
-.mostla-agenda,
-.mostla-foot {
-  width: 100%;
+.mostla-stage {
+  background:
+    radial-gradient(1200px 420px at 18% 10%, rgba(91, 78, 255, 0.28), transparent 60%),
+    #061428;
+  padding: 24px 0 32px;
 }
 
-.mostla-foot {
-  background: #000;
-  color: #fff;
-  text-align: center;
-  padding: 32px 24px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.mostla-foot p {
-  margin: 0 auto;
-  max-width: 1200px;
-}
-
-.mostla-hero {
-  background: #5b4eff;
-  margin: 0;
-  padding: 0;
-  line-height: 0;
-}
-
-.mostla-hero img {
-  width: 100%;
-  height: min(560px, 58vw);
-  min-height: 280px;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-}
-
-.mostla-intro {
-  position: relative;
-  padding: 48px 0;
-  text-align: center;
-  font-size: clamp(17px, 2vw, 22px);
-  line-height: 1.5;
-  color: #2b2b2b;
-}
-
-.mostla-intro .mostla-wrap {
-  position: relative;
-}
-
-.mostla-intro strong {
-  font-weight: 700;
-}
-
-.plane {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 16px solid #d7d7d7;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-}
-
-.plane-left {
-  left: 24px;
-  top: 8px;
-  transform: rotate(-18deg);
-}
-
-.plane-right {
-  right: 24px;
-  bottom: 8px;
-  transform: rotate(12deg);
-}
-
-.mostla-agenda {
-  margin: 0;
-  background: #0b2a5a;
-  line-height: 0;
-}
-
-.mostla-agenda img {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  display: block;
-  object-fit: contain;
+.mostla-stage-grid {
+  display: grid;
+  gap: 24px;
+  align-items: center;
 }
 
 .mostla-banner {
   margin: 0;
+  line-height: 0;
+  border-radius: 18px;
+  overflow: hidden;
   background: #0b2a5a;
 }
 
 .mostla-banner img {
   width: 100%;
   height: auto;
-  max-height: min(520px, 70vw);
-  object-fit: contain;
-  object-position: center;
+  max-width: 1280px;
   display: block;
-  margin: 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
 }
 
 .mostla-login {
-  padding: 28px 0 36px;
+  padding: 8px 0 0;
   text-align: center;
 }
 
+.mostla-kicker {
+  margin: 0 0 10px;
+  color: #c9d6ea;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .mostla-login h2 {
-  margin: 0 0 22px;
+  margin: 0 0 18px;
   font-size: clamp(22px, 2.4vw, 28px);
   font-weight: 600;
+  color: #163a5f;
 }
 
 .mostla-login form {
+  width: 100%;
   max-width: 420px;
   margin: 0 auto;
   display: grid;
   gap: 12px;
   text-align: left;
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 18px 40px rgba(6, 20, 40, 0.22);
 }
 
 .mostla-login label {
@@ -2145,11 +2086,12 @@ input {
 }
 
 .mostla-login input {
-  border: 1px solid #bbb;
-  border-radius: 2px;
-  padding: 10px 12px;
+  border: 1px solid #d7dee6;
+  border-radius: 10px;
+  padding: 12px;
   background: #fff;
   width: 100%;
+  font-size: 16px;
 }
 
 .mostla-btn {
@@ -2159,7 +2101,7 @@ input {
   background: #5b4eff;
   color: #fff;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 18px;
   border-radius: 999px;
   padding: 12px 36px;
   cursor: pointer;
@@ -2168,7 +2110,73 @@ input {
 .mostla-login form .mostla-btn {
   width: fit-content;
   justify-self: center;
-  margin-top: 16px;
+  margin-top: 8px;
+}
+
+.mostla-agenda-block {
+  background: #0b2a5a;
+  padding: 28px 0 40px;
+}
+
+.mostla-agenda {
+  margin: 0 auto;
+  max-width: 420px;
+  line-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.mostla-agenda img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.mostla-foot {
+  width: 100%;
+  background: #000;
+  color: #fff;
+  text-align: center;
+  padding: 28px 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mostla-foot p {
+  margin: 0 auto;
+  max-width: 1120px;
+}
+
+@media (min-width: 900px) {
+  .mostla-stage {
+    padding: 40px 0 48px;
+    min-height: calc(100dvh - 0px);
+  }
+
+  .mostla-stage-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    gap: 40px;
+    min-height: 560px;
+  }
+
+  .mostla-login {
+    padding: 0;
+  }
+
+  .mostla-login form {
+    margin: 0;
+  }
+
+  .mostla-agenda {
+    max-width: 480px;
+  }
+
+  .mostla-agenda-block {
+    padding: 48px 0 64px;
+  }
 }
 
 .mostla-links {

@@ -31,60 +31,67 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
 
   return (
     <main className="mostla">
-      <figure className="mostla-banner">
-        <img src="/landing/mostla-banner.jpg" alt="MOSTLA DAY. Robot y tecnologías del evento" />
-      </figure>
+      <section className="mostla-stage">
+        <div className="mostla-wrap mostla-stage-grid">
+          <figure className="mostla-banner">
+            <img src="/landing/mostla-banner.jpg" alt="MOSTLA DAY. Robot y tecnologías del evento" />
+          </figure>
 
-      <section className="mostla-login">
-        <div className="mostla-wrap">
-          <form onSubmit={handleSubmit}>
-            <h2>{mode === 'register' ? 'Regístrate para comenzar' : 'Ingresa para comenzar tu experiencia'}</h2>
-            <label>
-              Matrícula
-              <input
-                value={matricula}
-                onChange={(e) => setMatricula(e.target.value)}
-                placeholder="A0 / L0"
-                autoComplete="username"
-                required
-              />
-            </label>
-            {mode === 'register' ? (
+          <section className="mostla-login">
+            <p className="mostla-kicker">13 de octubre · Campus Querétaro</p>
+            <form onSubmit={handleSubmit}>
+              <h2>{mode === 'register' ? 'Regístrate para comenzar' : 'Ingresa para comenzar tu experiencia'}</h2>
               <label>
-                Tarjeta NFC
+                Matrícula
                 <input
-                  value={nfc}
-                  onChange={(e) => setNfc(e.target.value)}
-                  autoCapitalize="characters"
+                  value={matricula}
+                  onChange={(e) => setMatricula(e.target.value)}
+                  placeholder="A0 / L0"
+                  autoComplete="username"
                   required
                 />
               </label>
-            ) : null}
-            {error ? <p className="error">{error}</p> : null}
-            <button className="mostla-btn" disabled={busy} type="submit">
-              {mode === 'register' ? 'Registrarme' : 'Iniciar sesión'}
-            </button>
-            <p className="mostla-links">
               {mode === 'register' ? (
-                <button type="button" className="mostla-text-link" onClick={() => switchMode('login')}>
-                  Ya tengo cuenta. Iniciar sesión
-                </button>
-              ) : (
-                <>
-                  ¿Es tu primera vez?{' '}
-                  <button type="button" className="mostla-text-link" onClick={() => switchMode('register')}>
-                    Regístrate aquí
+                <label>
+                  Tarjeta NFC
+                  <input
+                    value={nfc}
+                    onChange={(e) => setNfc(e.target.value)}
+                    autoCapitalize="characters"
+                    required
+                  />
+                </label>
+              ) : null}
+              {error ? <p className="error">{error}</p> : null}
+              <button className="mostla-btn" disabled={busy} type="submit">
+                {mode === 'register' ? 'Registrarme' : 'Iniciar sesión'}
+              </button>
+              <p className="mostla-links">
+                {mode === 'register' ? (
+                  <button type="button" className="mostla-text-link" onClick={() => switchMode('login')}>
+                    Ya tengo cuenta. Iniciar sesión
                   </button>
-                </>
-              )}
-            </p>
-          </form>
+                ) : (
+                  <>
+                    ¿Es tu primera vez?{' '}
+                    <button type="button" className="mostla-text-link" onClick={() => switchMode('register')}>
+                      Regístrate aquí
+                    </button>
+                  </>
+                )}
+              </p>
+            </form>
+          </section>
         </div>
       </section>
 
-      <figure className="mostla-agenda">
-        <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre, Pabellón: inauguración, pláticas y clausura" />
-      </figure>
+      <section className="mostla-agenda-block">
+        <div className="mostla-wrap">
+          <figure className="mostla-agenda">
+            <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre, Pabellón: inauguración, pláticas y clausura" />
+          </figure>
+        </div>
+      </section>
 
       <footer className="mostla-foot">
         <p>Esta página tiene como único propósito acompañar las actividades de MOSTLA DAY.</p>
