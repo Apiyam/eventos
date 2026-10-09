@@ -2,6 +2,8 @@ import { parseTalkDate } from './time'
 
 const ADMIN_TOKEN_KEY = 'eventos.admin.token'
 const ADMIN_PROFILE_KEY = 'eventos.admin.profile'
+const ADMIN_ACTIVITY_KEY = 'eventos.admin.activity'
+export const ADMIN_IDLE_MS = 5 * 60 * 60 * 1000
 
 const REAL_API = 'https://vexom.com.mx/back_tec_nfc/public/api/v1'
 
@@ -22,10 +24,46 @@ export function getAdminToken() {
   }
 }
 
+export function touchAdminActivity() {
+  try {
+    localStorage.setItem(ADMIN_ACTIVITY_KEY, String(Date.now()))
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function getAdminActivity() {
+  try {
+    const value = Number(localStorage.getItem(ADMIN_ACTIVITY_KEY) || 0)
+    return Number.isFinite(value) ? value : 0
+  } catch {
+    return 0
+  }
+}
+
+export function clearAdminActivity() {
+  try {
+    localStorage.removeItem(ADMIN_ACTIVITY_KEY)
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function isAdminSessionExpired() {
+  const last = getAdminActivity()
+  if (!last) return false
+  return Date.now() - last > ADMIN_IDLE_MS
+}
+
 export function setAdminToken(token) {
   try {
-    if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token)
-    else localStorage.removeItem(ADMIN_TOKEN_KEY)
+    if (token) {
+      localStorage.setItem(ADMIN_TOKEN_KEY, token)
+      touchAdminActivity()
+    } else {
+      localStorage.removeItem(ADMIN_TOKEN_KEY)
+      clearAdminActivity()
+    }
   } catch {
     /* private mode / quota */
   }

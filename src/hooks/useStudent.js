@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   api,
   createStudentRecord,
+  getAdminActivity,
   getAdminProfile,
   getAdminToken,
   getStudentEnrollment,
+  isAdminSessionExpired,
   loginStudentByEnrollment,
   setAdminProfile,
   setAdminToken,
   setStudentEnrollment,
+  touchAdminActivity,
   unwrapToken,
   unwrapUser,
 } from '../lib/api'
@@ -108,6 +111,15 @@ export function useAdminSession() {
       setReady(true)
       return undefined
     }
+    if (stored && isAdminSessionExpired()) {
+      setAdminToken('')
+      setAdminProfile(null)
+      setToken('')
+      setProfile(null)
+      setReady(true)
+      return undefined
+    }
+    if (stored && cached && !getAdminActivity()) touchAdminActivity()
     setReady(true)
     if (cached) return undefined
     api('/auth/profile', { token: stored })
@@ -172,6 +184,33 @@ export function useAdminSession() {
     setToken('')
     setProfile(null)
   }, [token])
+
+  useEffect(() => {
+    if (!token || !profile) return undefined
+
+    let lastTouch = 0
+    function markActive() {
+      const now = Date.now()
+      if (now - lastTouch < 30_000) return
+      lastTouch = now
+      touchAdminActivity()
+    }
+
+    function expireIfIdle() {
+      if (!isAdminSessionExpired()) return
+      logout()
+    }
+
+    const events = ['pointerdown', 'keydown', 'click', 'scroll', 'touchstart']
+    events.forEach((event) => window.addEventListener(event, markActive, { passive: true }))
+    const timer = window.setInterval(expireIfIdle, 60_000)
+    expireIfIdle()
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, markActive))
+      window.clearInterval(timer)
+    }
+  }, [logout, profile, token])
 
   return { token, profile, ready, login, logout, updateProfile }
 }

@@ -83,7 +83,7 @@ export function EventHome({ onLogin, onRegister, loginError = '' }) {
       </section>
 
       <figure className="mostla-agenda">
-        <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre: Pabellón, Jardinera, MOSTLA, Zona XR y Biblioteca" />
+        <img src="/landing/mostla-agenda.jpg" alt="Agenda MOSTLA DAY. 13 de octubre, Pabellón: inauguración, pláticas y clausura" />
       </figure>
 
       <footer className="mostla-foot">
