@@ -192,16 +192,31 @@ export function extractStudentId(record) {
   return asId(record?.student_id) || asId(record?.id)
 }
 
+function isTalkEnrollment(row) {
+  if (!row || typeof row !== 'object') return false
+  if (row.talk_id != null && row.talk_id !== '') return true
+  if (row.talk && typeof row.talk === 'object') return true
+  return false
+}
+
 export function extractTalkIds(res) {
-  const rows = unwrapList(res)
+  const rows = unwrapList(res).filter(isTalkEnrollment)
   return [
     ...new Set(
       rows
-        .flatMap((row) => [row?.talk_id, row?.talk?.id])
+        .flatMap((row) => [row?.talk_id, row?.talk?.id, row?.talk?.talk_id])
         .filter((id) => id != null && id !== '')
         .map(String),
     ),
   ]
+}
+
+function enrolledTalkIds(row) {
+  if (Array.isArray(row?.talks) && row.talks.some(isTalkEnrollment)) {
+    return extractTalkIds({ data: row.talks.filter(isTalkEnrollment) })
+  }
+  if (Array.isArray(row?.talk_ids)) return row.talk_ids.map(String).filter(Boolean)
+  return []
 }
 
 function rowBelongsToStudent(row, student) {
@@ -245,11 +260,7 @@ export function asStudentProfile(row) {
     email: row.email || '',
     image_url: row.image_url || '',
     points: studentPoints(row),
-    talk_ids: Array.isArray(row.talk_ids)
-      ? row.talk_ids.map(String)
-      : Array.isArray(row.talks)
-        ? row.talks.map((talk) => String(talk.id || talk.talk_id)).filter(Boolean)
-        : [],
+    talk_ids: enrolledTalkIds(row),
     talks: Array.isArray(row.talks) ? row.talks : undefined,
     staff: Boolean(row.staff),
     created_at: row.created_at || '',
@@ -309,19 +320,17 @@ export async function fetchEventStudents(eventId) {
 }
 
 export async function fetchStudentTalks(student) {
-  const nested = Array.isArray(student?.talks) ? student.talks.filter((row) => row?.talk_id || row?.talk) : []
+  const nested = Array.isArray(student?.talks) ? student.talks.filter(isTalkEnrollment) : []
   if (nested.length) return extractTalkIds({ data: nested })
 
   const studentId = extractStudentId(student)
-  if (studentId) {
-    try {
-      const rows = unwrapList(await api(`/student-talks/${studentId}`)).filter((row) => row?.talk_id || row?.talk)
-      return extractTalkIds({ data: rows })
-    } catch {
-      /* empty */
-    }
+  if (!studentId) return []
+  try {
+    const rows = unwrapList(await api(`/student-talks/${studentId}`)).filter(isTalkEnrollment)
+    return extractTalkIds({ data: rows })
+  } catch {
+    return []
   }
-  return []
 }
 
 export async function loginStudentByEnrollment(enrollment) {
@@ -330,8 +339,7 @@ export async function loginStudentByEnrollment(enrollment) {
   const list = await fetchStudents()
   const found = findStudentByEnrollment(list, needle)
   if (!found) throw new Error('Matrícula no registrada')
-  const talk_ids = await fetchStudentTalks(found)
-  return asStudentProfile({ ...found, talk_ids })
+  return asStudentProfile({ ...found, talk_ids: enrolledTalkIds(found) })
 }
 
 export function registerTalkAttendance(student, talkId) {

@@ -109,6 +109,7 @@ export function useAdminSession() {
       return undefined
     }
     setReady(true)
+    if (cached) return undefined
     api('/auth/profile', { token: stored })
       .then((res) => {
         if (cancelled) return
@@ -119,7 +120,7 @@ export function useAdminSession() {
         }
       })
       .catch(() => {
-        if (!cancelled && !cached) {
+        if (!cancelled) {
           setAdminToken('')
           setAdminProfile(null)
           setToken('')

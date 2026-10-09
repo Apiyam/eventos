@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { CheckInModal } from '../components/CheckInModal'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
-import { useAdminSession } from '../hooks/useStudent'
 import { useCodeScanner } from '../hooks/useCodeScanner'
 import {
   asStudentProfile,
@@ -11,6 +10,7 @@ import {
   fetchStudentTalks,
   fetchStudents,
   fetchTalks,
+  getAdminProfile,
   registerTalkAttendance,
 } from '../lib/api'
 import { findStudentByCode, findTalkByCode, normalizeScanCode } from '../lib/nfc'
@@ -20,7 +20,7 @@ import { formatTime } from '../lib/time'
 export function NfcCheckinPage() {
   const { code: routeCode } = useParams()
   const navigate = useNavigate()
-  const { profile: staff, ready: staffReady } = useAdminSession()
+  const staffRole = roleKey(getAdminProfile())
   const initialCode = normalizeScanCode(routeCode || '')
   const [students, setStudents] = useState([])
   const [talks, setTalks] = useState([])
@@ -34,11 +34,9 @@ export function NfcCheckinPage() {
   const [accepted, setAccepted] = useState(false)
 
   useEffect(() => {
-    if (!staffReady || !staff || !initialCode) return
-    if (roleKey(staff) === 'tienda') {
-      navigate(`/admin/canje?code=${encodeURIComponent(initialCode)}`, { replace: true })
-    }
-  }, [initialCode, navigate, staff, staffReady])
+    if (!initialCode || staffRole !== 'tienda') return
+    navigate(`/admin/canje?code=${encodeURIComponent(initialCode)}`, { replace: true })
+  }, [initialCode, navigate, staffRole])
 
   useEffect(() => {
     let cancelled = false
