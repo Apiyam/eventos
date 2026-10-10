@@ -3,22 +3,50 @@ const REMINDER_MINUTES = 10
 
 export { RELEASE_MINUTES, REMINDER_MINUTES }
 
-export function parseTalkDate(value) {
-  if (value instanceof Date) return value
+function pad(n) {
+  return String(n).padStart(2, '0')
+}
+
+function wallClock(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return {
+      year: value.getFullYear(),
+      month: value.getMonth() + 1,
+      day: value.getDate(),
+      hour: value.getHours(),
+      minute: value.getMinutes(),
+      second: value.getSeconds(),
+    }
+  }
   const raw = String(value || '').trim()
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/)
   if (match) {
-    return new Date(
-      Number(match[1]),
-      Number(match[2]) - 1,
-      Number(match[3]),
-      Number(match[4]),
-      Number(match[5]),
-      Number(match[6] || 0),
-    )
+    return {
+      year: Number(match[1]),
+      month: Number(match[2]),
+      day: Number(match[3]),
+      hour: Number(match[4]),
+      minute: Number(match[5]),
+      second: Number(match[6] || 0),
+    }
   }
-  const parsed = new Date(raw)
+  return null
+}
+
+export function parseTalkDate(value) {
+  if (value instanceof Date) return value
+  const clock = wallClock(value)
+  if (clock) {
+    return new Date(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute, clock.second)
+  }
+  const parsed = new Date(String(value || '').trim())
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
+
+export function toWallClockString(value) {
+  const clock = wallClock(value) || wallClock(parseTalkDate(value))
+  if (!clock) return ''
+  return `${clock.year}-${pad(clock.month)}-${pad(clock.day)} ${pad(clock.hour)}:${pad(clock.minute)}:${pad(clock.second)}`
 }
 
 export function toDate(value) {
@@ -26,22 +54,17 @@ export function toDate(value) {
 }
 
 export function formatTime(value) {
-  return toDate(value).toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+  const clock = wallClock(value) || wallClock(parseTalkDate(value))
+  if (!clock) return ''
+  const period = clock.hour >= 12 ? 'PM' : 'AM'
+  const hour12 = clock.hour % 12 || 12
+  return `${pad(hour12)}:${pad(clock.minute)} ${period}`
 }
 
 export function formatDateTime(value) {
-  return toDate(value).toLocaleString('es-MX', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+  const clock = wallClock(value) || wallClock(parseTalkDate(value))
+  if (!clock) return ''
+  return `${pad(clock.day)}/${pad(clock.month)}/${clock.year} ${formatTime(value)}`
 }
 
 export function minutesBetween(from, to) {

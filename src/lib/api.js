@@ -1,4 +1,4 @@
-import { parseTalkDate } from './time'
+import { parseTalkDate, toWallClockString } from './time'
 
 const ADMIN_TOKEN_KEY = 'eventos.admin.token'
 const ADMIN_PROFILE_KEY = 'eventos.admin.profile'
@@ -436,15 +436,16 @@ export async function fetchStoreList(token) {
 }
 
 export function mapTalk(talk) {
-  const start = parseTalkDate(talk.start_time || talk.start)
+  const startRaw = talk.start_time || talk.start
+  const start = parseTalkDate(startRaw)
   const end = new Date(start.getTime() + Number(talk.duration || 0) * 60000)
   return {
     id: String(talk.id),
     rawId: talk.id,
     title: talk.name || talk.title || '',
     speaker: talk.speaker || talk.company || '',
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: startRaw || toWallClockString(start),
+    end: toWallClockString(end),
     image: talk.image_path || talk.image || '',
     benefit: talk.benefit,
     maxForum: talk.max_forum,

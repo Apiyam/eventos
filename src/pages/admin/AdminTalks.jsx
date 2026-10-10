@@ -6,6 +6,7 @@ import { FilterableTable } from '../../components/FilterableTable'
 import { confirmAction, notifyError, notifySuccess } from '../../lib/alert'
 import { api, imageUrl, unwrapImagePath, unwrapList } from '../../lib/api'
 import { publicNfcUrl } from '../../lib/nfc'
+import { formatTime } from '../../lib/time'
 
 const emptyTalk = {
   name: '',
@@ -147,7 +148,12 @@ export function AdminTalks() {
                 talk.image_path ? <img className="dash-thumb" src={imageUrl(talk.image_path)} alt="" /> : '—',
             },
             { key: 'speaker', label: 'Ponente', value: (talk) => talk.speaker || talk.company },
-            { key: 'start_time', label: 'Inicio' },
+            {
+              key: 'start_time',
+              label: 'Inicio',
+              value: (talk) => talk.start_time,
+              render: (talk) => formatTime(talk.start_time),
+            },
             { key: 'duration', label: 'Min', type: 'number' },
             {
               key: 'cupo',
