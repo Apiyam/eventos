@@ -61,10 +61,15 @@ export function formatTime(value) {
   return `${pad(hour12)}:${pad(clock.minute)} ${period}`
 }
 
-export function formatDateTime(value) {
+export function formatDateTime(value, { seconds = false } = {}) {
   const clock = wallClock(value) || wallClock(parseTalkDate(value))
   if (!clock) return ''
-  return `${pad(clock.day)}/${pad(clock.month)}/${clock.year} ${formatTime(value)}`
+  const period = clock.hour >= 12 ? 'PM' : 'AM'
+  const hour12 = clock.hour % 12 || 12
+  const time = seconds
+    ? `${pad(hour12)}:${pad(clock.minute)}:${pad(clock.second)} ${period}`
+    : `${pad(hour12)}:${pad(clock.minute)} ${period}`
+  return `${pad(clock.day)}/${pad(clock.month)}/${clock.year} ${time}`
 }
 
 export function minutesBetween(from, to) {

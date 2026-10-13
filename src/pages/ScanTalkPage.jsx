@@ -13,7 +13,7 @@ import {
   registerTalkAttendance,
 } from '../lib/api'
 import { findStudentByCode } from '../lib/nfc'
-import { formatTime, talkStatus } from '../lib/time'
+import { formatTime, talkStatus, toWallClockString } from '../lib/time'
 
 export function ScanTalkPage({ token }) {
   const [students, setStudents] = useState([])
@@ -86,7 +86,7 @@ export function ScanTalkPage({ token }) {
       const rows = [...history, { talkId: String(talkId), at: '', index: history.length }]
       const next = asStudentProfile({
         ...profile,
-        talks: [...(profile.talks || []), { id: talk?.rawId || talkId, name: talk?.title, created_at: new Date().toISOString() }],
+        talks: [...(profile.talks || []), { id: talk?.rawId || talkId, name: talk?.title, created_at: toWallClockString(new Date()) }],
       })
       setHistory(rows)
       setProfile(next)

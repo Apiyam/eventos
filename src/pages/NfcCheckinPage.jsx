@@ -16,7 +16,7 @@ import {
 } from '../lib/api'
 import { findStudentByCode, findTalkByCode, normalizeScanCode } from '../lib/nfc'
 import { roleKey } from '../lib/roles'
-import { formatTime, talkStatus } from '../lib/time'
+import { formatTime, talkStatus, toWallClockString } from '../lib/time'
 
 export function NfcCheckinPage() {
   const { code: routeCode } = useParams()
@@ -133,7 +133,7 @@ export function NfcCheckinPage() {
         ...profile,
         talks: [
           ...(profile.talks || []),
-          { id: selected.rawId || selected.id, name: selected.title, created_at: new Date().toISOString() },
+          { id: selected.rawId || selected.id, name: selected.title, created_at: toWallClockString(new Date()) },
         ],
       })
       setHistory([...history, { talkId: String(selected.id), at: next.talks.at(-1)?.created_at || '', index: history.length }])

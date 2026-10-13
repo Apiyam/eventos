@@ -1,4 +1,4 @@
-import { formatTime } from '../lib/time'
+import { formatDateTime, formatTime } from '../lib/time'
 
 export function groupTalkActivations(activations, talks) {
   const groups = []
@@ -36,8 +36,8 @@ export function ActivationGroups({ activations, talks, empty }) {
           <ol>
             {group.items.map((item, i) => (
               <li key={`${group.id}-${item.index ?? i}`}>
-                Activación {i + 1}
-                {item.at ? <span>{item.at}</span> : null}
+                {group.talk?.title || 'Plática'}
+                {item.at ? <span>{formatDateTime(item.at, { seconds: true })}</span> : null}
               </li>
             ))}
           </ol>
