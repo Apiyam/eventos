@@ -201,7 +201,7 @@ export function NfcCheckinPage() {
           <>
             {historyTalks.length ? (
               <div>
-                <h2>Pláticas registradas</h2>
+                <h3>Pláticas registradas</h3>
               <ul className="staff-history">
                 {historyTalks.map((talk) => (
                   <li key={talk.id}>
@@ -220,7 +220,7 @@ export function NfcCheckinPage() {
                 <p className="nfc-gate-talk">Plática: {lockedTalk.title}</p>
               ) : (
                 <label>
-                  Plática
+                  <h3>Registrar entrada</h3>
                   <select value={talkId} onChange={(e) => setTalkId(e.target.value)}>
                     <option value="">Selecciona una plática</option>
                     {available.map((talk) => (
