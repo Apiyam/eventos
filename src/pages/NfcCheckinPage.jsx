@@ -200,6 +200,8 @@ export function NfcCheckinPage() {
         {profile ? (
           <>
             {historyTalks.length ? (
+              <div>
+                <h2>Pláticas registradas</h2>
               <ul className="staff-history">
                 {historyTalks.map((talk) => (
                   <li key={talk.id}>
@@ -208,6 +210,7 @@ export function NfcCheckinPage() {
                   </li>
                 ))}
               </ul>
+              </div>
             ) : (
               <p className="muted">Aún no tiene pláticas registradas.</p>
             )}
