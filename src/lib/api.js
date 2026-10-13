@@ -256,11 +256,20 @@ function talkIdFromNested(item) {
 }
 
 function enrolledTalkIds(row) {
-  if (Array.isArray(row?.talks) && row.talks.length) {
-    return [...new Set(row.talks.map(talkIdFromNested).filter(Boolean))]
+  return [...new Set(studentTalkActivations(row).map((item) => item.talkId))]
+}
+
+export function studentTalkActivations(student) {
+  if (Array.isArray(student?.talks) && student.talks.length) {
+    return student.talks
+      .map((item, index) => ({
+        talkId: talkIdFromNested(item),
+        at: item.created_at || '',
+        index,
+      }))
+      .filter((row) => row.talkId)
   }
-  if (Array.isArray(row?.talk_ids)) return row.talk_ids.map(String).filter(Boolean)
-  return []
+  return (student?.talk_ids || []).map((id, index) => ({ talkId: String(id), at: '', index }))
 }
 
 function rowBelongsToStudent(row, student) {
@@ -365,6 +374,10 @@ export async function fetchEventStudents(eventId) {
 
 export async function fetchStudentTalks(student) {
   return enrolledTalkIds(student)
+}
+
+export function fetchStudentActivations(student) {
+  return studentTalkActivations(student)
 }
 
 export async function loginStudentByEnrollment(enrollment) {

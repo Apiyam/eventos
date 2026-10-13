@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckInModal } from '../components/CheckInModal'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
 import { useCodeScanner } from '../hooks/useCodeScanner'
+import { ActivationGroups } from '../components/ActivationGroups'
 import {
   asStudentProfile,
   extractStudentId,
-  fetchStudentTalks,
+  fetchStudentActivations,
   fetchStudents,
   fetchTalks,
   registerTalkAttendance,
 } from '../lib/api'
 import { findStudentByCode } from '../lib/nfc'
-import { formatTime } from '../lib/time'
+import { formatTime, talkStatus } from '../lib/time'
 
 export function ScanTalkPage({ token }) {
   const [students, setStudents] = useState([])
@@ -24,6 +25,12 @@ export function ScanTalkPage({ token }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [accepted, setAccepted] = useState(false)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30000)
+    return () => window.clearInterval(id)
+  }, [])
 
   useEffect(() => {
     fetchStudents(token).then(setStudents).catch((err) => setError(err.message))
@@ -32,13 +39,12 @@ export function ScanTalkPage({ token }) {
       .catch((err) => setError(err.message))
   }, [token])
 
-  const assignedIds = useMemo(() => new Set(history.map(String)), [history])
-  const available = talks.filter((talk) => !assignedIds.has(talk.id))
+  const available = talks.filter((talk) => talkStatus(talk, now) !== 'ended')
 
-  async function loadHistory(student) {
-    const ids = await fetchStudentTalks(student)
-    setHistory(ids)
-    return ids
+  function loadHistory(student) {
+    const rows = fetchStudentActivations(student)
+    setHistory(rows)
+    return rows
   }
 
   async function openProfile(raw, list = students) {
@@ -56,7 +62,7 @@ export function ScanTalkPage({ token }) {
     try {
       await loadHistory(found)
     } catch (err) {
-      setHistory(found.talk_ids || [])
+      setHistory(fetchStudentActivations(found))
       setError(err.message)
     }
   }
@@ -77,13 +83,12 @@ export function ScanTalkPage({ token }) {
     setError('')
     try {
       await registerTalkAttendance(profile, talk?.rawId || talkId)
-      const ids = [...assignedIds, String(talkId)]
+      const rows = [...history, { talkId: String(talkId), at: '', index: history.length }]
       const next = asStudentProfile({
         ...profile,
-        talk_ids: ids,
-        talks: [...(profile.talks || []), { id: talk?.rawId || talkId, name: talk?.title }],
+        talks: [...(profile.talks || []), { id: talk?.rawId || talkId, name: talk?.title, created_at: new Date().toISOString() }],
       })
-      setHistory(ids)
+      setHistory(rows)
       setProfile(next)
       setStudents((current) => current.map((row) => (row.student_id === next.student_id ? next : row)))
       setTalkId('')
@@ -103,8 +108,6 @@ export function ScanTalkPage({ token }) {
     setCode('')
     setError('')
   }
-
-  const historyTalks = talks.filter((talk) => assignedIds.has(talk.id))
 
   return (
     <section className="dash-card staff-panel">
@@ -144,18 +147,11 @@ export function ScanTalkPage({ token }) {
       {profile ? (
         <>
           <h4>Historial de pláticas</h4>
-          {historyTalks.length ? (
-            <ul className="staff-history">
-              {historyTalks.map((talk) => (
-                <li key={talk.id}>
-                  <strong>{talk.title}</strong>
-                  <span>{formatTime(talk.start)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">Aún no tiene pláticas registradas.</p>
-          )}
+          <ActivationGroups
+            activations={history}
+            talks={talks}
+            empty="Aún no tiene pláticas registradas."
+          />
 
           <div className="staff-confirm">
             <label>

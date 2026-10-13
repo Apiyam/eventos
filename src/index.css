@@ -2803,6 +2803,76 @@ input {
   font-size: 12px;
 }
 
+.activation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.activation-acc {
+  background: #f5f8fc;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.activation-acc summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.activation-acc summary::-webkit-details-marker {
+  display: none;
+}
+
+.activation-acc summary span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activation-acc summary small {
+  color: #5c6570;
+  font-size: 12px;
+}
+
+.activation-acc summary em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: #163a5f;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.activation-acc ol {
+  margin: 0;
+  padding: 0 12px 10px 28px;
+  display: grid;
+  gap: 6px;
+  color: #5c6570;
+  font-size: 13px;
+}
+
+.activation-acc li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pass-panel .activation-acc {
+  background: #fff7ea;
+}
+
+.pass-panel .activation-list {
+  padding: 0 12px 12px;
+}
+
 .staff-products {
   display: grid;
   grid-template-columns: 1fr;

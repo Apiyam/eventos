@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ActivationGroups } from '../components/ActivationGroups'
 import { CheckInModal } from '../components/CheckInModal'
 import { StaffScanBar } from '../components/StaffScanBar'
 import { StudentCredential } from '../components/StudentCredential'
@@ -7,7 +8,7 @@ import { useCodeScanner } from '../hooks/useCodeScanner'
 import {
   asStudentProfile,
   extractStudentId,
-  fetchStudentTalks,
+  fetchStudentActivations,
   fetchStudents,
   fetchTalks,
   getAdminProfile,
@@ -15,7 +16,7 @@ import {
 } from '../lib/api'
 import { findStudentByCode, findTalkByCode, normalizeScanCode } from '../lib/nfc'
 import { roleKey } from '../lib/roles'
-import { formatTime } from '../lib/time'
+import { formatTime, talkStatus } from '../lib/time'
 
 export function NfcCheckinPage() {
   const { code: routeCode } = useParams()
@@ -32,6 +33,12 @@ export function NfcCheckinPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [accepted, setAccepted] = useState(false)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30000)
+    return () => window.clearInterval(id)
+  }, [])
 
   useEffect(() => {
     if (!initialCode || staffRole !== 'tienda') return
@@ -58,13 +65,12 @@ export function NfcCheckinPage() {
     }
   }, [initialCode])
 
-  const assignedIds = useMemo(() => new Set(history.map(String)), [history])
-  const available = talks.filter((talk) => !assignedIds.has(talk.id))
+  const available = talks.filter((talk) => talkStatus(talk, now) !== 'ended')
 
-  async function loadHistory(student) {
-    const ids = await fetchStudentTalks(student)
-    setHistory(ids)
-    return ids
+  function loadHistory(student) {
+    const rows = fetchStudentActivations(student)
+    setHistory(rows)
+    return rows
   }
 
   async function openStudent(raw, list = students) {
@@ -81,7 +87,7 @@ export function NfcCheckinPage() {
     try {
       await loadHistory(found)
     } catch (err) {
-      setHistory(found.talk_ids || [])
+      setHistory(fetchStudentActivations(found))
       setError(err.message)
     }
     return found
@@ -123,14 +129,14 @@ export function NfcCheckinPage() {
     setError('')
     try {
       await registerTalkAttendance(profile, selected.rawId || selected.id)
-      const talkKey = String(selected.id)
-      const ids = [...assignedIds, talkKey]
       const next = asStudentProfile({
         ...profile,
-        talk_ids: ids,
-        talks: [...(profile.talks || []), { id: selected.rawId || selected.id, name: selected.title }],
+        talks: [
+          ...(profile.talks || []),
+          { id: selected.rawId || selected.id, name: selected.title, created_at: new Date().toISOString() },
+        ],
       })
-      setHistory(ids)
+      setHistory([...history, { talkId: String(selected.id), at: next.talks.at(-1)?.created_at || '', index: history.length }])
       setProfile(next)
       setStudents((current) =>
         current.map((row) => (row.student_id === next.student_id ? next : row)),
@@ -153,7 +159,6 @@ export function NfcCheckinPage() {
     if (!lockedTalk) setTalkId('')
   }
 
-  const historyTalks = talks.filter((talk) => assignedIds.has(talk.id))
   const selectedTalkId = lockedTalk?.id || talkId
 
   return (
@@ -199,21 +204,12 @@ export function NfcCheckinPage() {
 
         {profile ? (
           <>
-            {historyTalks.length ? (
-              <div>
-                <h3>Pláticas registradas</h3>
-              <ul className="staff-history">
-                {historyTalks.map((talk) => (
-                  <li key={talk.id}>
-                    <strong>{talk.title}</strong>
-                    <span>{formatTime(talk.start)}</span>
-                  </li>
-                ))}
-              </ul>
-              </div>
-            ) : (
-              <p className="muted">Aún no tiene pláticas registradas.</p>
-            )}
+            <h3>Pláticas registradas</h3>
+            <ActivationGroups
+              activations={history}
+              talks={talks}
+              empty="Aún no tiene pláticas registradas."
+            />
 
             <div className="staff-confirm">
               {lockedTalk ? (

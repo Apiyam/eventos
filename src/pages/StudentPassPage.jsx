@@ -1,6 +1,7 @@
 import { CalendarDays, ChevronDown, LogOut, ShoppingBag, Ticket } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchStoreList, fetchStudentTalks, fetchTalks } from '../lib/api'
+import { ActivationGroups } from '../components/ActivationGroups'
+import { fetchStoreList, fetchTalks, studentTalkActivations } from '../lib/api'
 import { publicNfcUrl, qrImageUrl } from '../lib/nfc'
 import { formatTime } from '../lib/time'
 
@@ -25,12 +26,10 @@ function PassList({ items, empty, loaded }) {
 
 export function StudentPassPage({ student, onCheckout }) {
   const [talks, setTalks] = useState([])
-  const [mineIds, setMineIds] = useState([])
   const [agendaOpen, setAgendaOpen] = useState(false)
   const [mineOpen, setMineOpen] = useState(false)
   const [storeOpen, setStoreOpen] = useState(false)
   const [catalogLoaded, setCatalogLoaded] = useState(false)
-  const [mineLoaded, setMineLoaded] = useState(false)
   const [products, setProducts] = useState([])
   const [storeLoaded, setStoreLoaded] = useState(false)
 
@@ -56,24 +55,6 @@ export function StudentPassPage({ student, onCheckout }) {
   }, [agendaOpen, catalogLoaded, mineOpen])
 
   useEffect(() => {
-    if (!mineOpen || mineLoaded) return undefined
-    let cancelled = false
-    fetchStudentTalks(student)
-      .then((ids) => {
-        if (!cancelled) setMineIds(ids.map(String))
-      })
-      .catch(() => {
-        if (!cancelled) setMineIds([])
-      })
-      .finally(() => {
-        if (!cancelled) setMineLoaded(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [mineLoaded, mineOpen, student])
-
-  useEffect(() => {
     if (!storeOpen || storeLoaded) return undefined
     let cancelled = false
     fetchStoreList()
@@ -95,10 +76,7 @@ export function StudentPassPage({ student, onCheckout }) {
     () => [...talks].sort((a, b) => String(a.start).localeCompare(String(b.start))),
     [talks],
   )
-  const mine = useMemo(() => {
-    const ids = new Set(mineIds.map(String))
-    return agenda.filter((talk) => ids.has(String(talk.id)) || ids.has(String(talk.rawId)))
-  }, [agenda, mineIds])
+  const mineActivations = useMemo(() => studentTalkActivations(student), [student])
 
   return (
     <div className="app-frame pass-frame">
@@ -175,11 +153,15 @@ export function StudentPassPage({ student, onCheckout }) {
               <ChevronDown size={18} />
             </button>
             {mineOpen ? (
-              <PassList
-                loaded={mineLoaded && catalogLoaded}
-                empty="Aún no estás registrado en ninguna plática o taller."
-                items={mine.map((talk) => ({ id: talk.id, title: talk.title, meta: formatTime(talk.start) }))}
-              />
+              catalogLoaded ? (
+                <ActivationGroups
+                  activations={mineActivations}
+                  talks={talks}
+                  empty="Aún no estás registrado en ninguna plática o taller."
+                />
+              ) : (
+                <PassList loaded={false} empty="" items={[]} />
+              )
             ) : null}
           </div>
 
